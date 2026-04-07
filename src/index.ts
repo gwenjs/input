@@ -1,12 +1,19 @@
-// Side-effect: activates typed engine.inject('input') in manual mode
+// Side-effect: augment engine types
 import './augment.js'
 
-// Plugin factory — for manual registration in plugins: []
+// Plugin
 export { InputPlugin } from './plugin/index.js'
 export type { InputPluginConfig, InputPluginHooks } from './plugin/index.js'
 
-// Composables — useInput() for runtime access
+// DX APIs
+export * from './actions/index.js'
+export * from './contexts/index.js'
+export * from './constants/index.js'
+
+// Composables
 export { useInput } from './composables.js'
 
-// The build-time module is exported via the './module' package export.
-// Do NOT re-export it here — that would create a circular dependency.
+// Types
+export type * from './types.js'
+
+// module.ts is exported via the './module' sub-path export — not from index to avoid circular deps

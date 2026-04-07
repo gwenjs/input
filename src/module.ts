@@ -8,7 +8,8 @@
  * Always import from './plugin.js' or './types.js' directly.
  */
 
-import { defineGwenModule, definePluginTypes } from '@gwenjs/kit'
+import { defineGwenModule } from '@gwenjs/kit/module'
+import { definePluginTypes } from '@gwenjs/kit/plugin'
 import type { InputPluginConfig } from './plugin/config.js'
 
 export default defineGwenModule<InputPluginConfig>({
@@ -22,14 +23,25 @@ export default defineGwenModule<InputPluginConfig>({
 
     kit.addAutoImports([
       { name: 'useInput', from: '@gwenjs/input' },
+      { name: 'useAction', from: '@gwenjs/input' },
+      { name: 'usePlayer', from: '@gwenjs/input' },
+      { name: 'defineInputSchema', from: '@gwenjs/input' },
+      { name: 'defineInputContext', from: '@gwenjs/input' },
+      { name: 'bind', from: '@gwenjs/input' },
     ])
 
     kit.addTypeTemplate({
       filename: 'input.d.ts',
       getContents: () =>
         definePluginTypes({
-          imports: ["import type { InputService } from '@gwenjs/input'"],
+          imports: [
+            "import type { InputService, InputPluginHooks } from '@gwenjs/input'",
+          ],
           provides: { input: 'InputService' },
+          hooks: {
+            'input:contextActivated': '(name: string, priority: number) => void',
+            'input:contextDeactivated': '(name: string) => void',
+          },
         }),
     })
   },

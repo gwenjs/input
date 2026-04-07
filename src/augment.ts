@@ -4,7 +4,7 @@
  */
 
 import type { InputPluginHooks } from './plugin/index.js'
-import type { InputService } from './types.js'
+import type { InputService } from './players/input-service.js'
 
 declare module '@gwenjs/core' {
   interface GwenRuntimeHooks extends InputPluginHooks {}

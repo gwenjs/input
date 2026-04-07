@@ -3,7 +3,10 @@ import { definePlugin } from '@gwenjs/kit/plugin'
 import type { GwenEngine } from '@gwenjs/core'
 import { normalizeConfig } from './config.js'
 import type { InputPluginConfig } from './config.js'
-import type { InputService } from '../types.js'
+import { InputService } from '../players/input-service.js'
+import { PlayerInput } from '../players/player-input.js'
+import type { DeviceAssignment, DeviceSet } from '../players/binding-resolver.js'
+import { InputContext } from '../contexts/input-context.js'
 import { KeyboardDevice } from '../devices/keyboard.js'
 import { MouseDevice } from '../devices/mouse.js'
 import { GamepadDevice } from '../devices/gamepad.js'
@@ -89,6 +92,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
   let touch: TouchDevice | undefined
   let gyro: GyroDevice | undefined
 
+  /** All player instances created during setup. */
+  let players: PlayerInput[] = []
+
   return {
     name: '@gwenjs/input',
     provides: { input: {} as InputService },
@@ -118,19 +124,68 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         }
       }
 
-      // TODO Phase 5: create PlayerInput instances, engine.provide('player:N', ...)
-      // TODO Phase 7: engine.provide('input', inputService)
+      // ── Create PlayerInput instances ─────────────────────────────────────
+      players = []
+      for (let i = 0; i < cfg.players; i++) {
+        const ctx = new InputContext()
+
+        // Register all configured contexts
+        for (const def of cfg.contexts) {
+          ctx.register(def)
+        }
+
+        // Activate default contexts (all registered if no explicit list provided)
+        const toActivate = cfg.defaultActiveContexts ?? cfg.contexts.map(c => c.name)
+        for (const name of toActivate) {
+          try { ctx.activate(name) } catch { /* ignore unregistered names */ }
+        }
+
+        // Player 0 → keyboard+mouse; subsequent players → gamepads in order
+        const assignment: DeviceAssignment = i === 0
+          ? { type: 'keyboard+mouse', slot: 0 }
+          : { type: 'gamepad', slot: i - 1 }
+
+        const deviceSet: DeviceSet = {
+          keyboard: keyboard!,
+          mouse: mouse!,
+          gamepad: gamepad!,
+          gyro: gyro!,
+        }
+
+        const bindingsChangedCb = cfg.onBindingsChanged
+          ? (snapshot: import('../players/bindings-snapshot.js').BindingsSnapshot) =>
+              cfg.onBindingsChanged!(i, snapshot)
+          : undefined
+
+        const player = new PlayerInput(i, ctx, deviceSet, assignment, bindingsChangedCb)
+
+        // Restore persisted bindings if provided
+        if (cfg.initialBindings[i]) {
+          player.importBindings(cfg.initialBindings[i]!)
+        }
+
+        players.push(player)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(engine as any).provide(`player:${i}`, player)
+      }
+
+      const inputService = new InputService(players)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(engine as any).provide('input', inputService)
 
       log.info('initialized', { players: cfg.players })
     },
 
-    onBeforeUpdate(_dt: number) {
+    onBeforeUpdate(dt: number) {
       if (typeof window !== 'undefined') {
         keyboard?.update()
         mouse?.update()
         gamepad?.update()
         touch?.update()
         gyro?.update()
+      }
+      for (const player of players) {
+        player._updateFrame(dt)
       }
     },
 

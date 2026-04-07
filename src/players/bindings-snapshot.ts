@@ -15,6 +15,6 @@ export interface BindingsSnapshot {
     /** Index into the action's binding array. */
     bindingIndex: number
     /** The new binding source replacing the default. */
-    newBinding: unknown
+    newBinding: import('../contexts/binding.js').BindingSource
   }>
 }

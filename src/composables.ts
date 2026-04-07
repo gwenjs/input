@@ -1,5 +1,5 @@
 import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { InputService } from './types.js'
+import type { InputService } from './players/input-service.js'
 import './augment.js'
 
 /**

@@ -16,6 +16,9 @@ export * from './interactions/index.js'
 // Composables
 export { useInput } from './composables.js'
 
+// Players
+export * from './players/index.js'
+
 // Types
 export type * from './types.js'
 

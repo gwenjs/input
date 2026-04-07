@@ -1,12 +1,15 @@
 import type { ActionRef, ActionType, ActionState, ButtonActionState, Axis1DActionState, Axis2DActionState } from '../types.js'
 import type { PlayerInput } from '../players/player-input.js'
-import type { InputRecording, InputRecordingChangeValue, InputRecordingState } from './types.js'
+import type { InputRecording, InputRecordingChangeValue, InputRecordingFrame, InputRecordingState } from './types.js'
 
 /**
  * Drives playback of a captured `InputRecording`, overriding live device
  * input for all `PlayerInput` instances.
  *
  * Obtain an instance via `useInput().playback` or `useInputPlayback()`.
+ *
+ * @remarks `holdTime` is not recorded or replayed. Systems depending on `holdTime`
+ * (e.g. Hold interactions checking exact hold duration) will see `holdTime: 0` during playback.
  *
  * @example
  * ```typescript
@@ -199,10 +202,12 @@ export class InputPlayback {
       if (this.loop) {
         this._framePosition = 0
         this._resetAccumulated()
-        this._applyFramesUpTo(rec.frameCount - 1)
-        this._framePosition = 0
-        const loopedFrame = Math.floor(this._framePosition)
-        this._notifyFrame(loopedFrame)
+        this._applyFramesUpTo(0)
+        // Suppress edge events on first looped frame (same as seek()).
+        for (let pi = 0; pi < this._players.length; pi++) {
+          this._prevAccumulated[pi] = new Map(this._accumulated[pi])
+        }
+        this._notifyFrame(0)
         this._pushPlaybackStates()
       } else {
         this._framePosition = rec.frameCount - 1
@@ -243,7 +248,7 @@ export class InputPlayback {
     for (const frame of this._recording.frames) {
       if (frame.index < fromInclusive) continue
       if (frame.index > toInclusive) break
-      this._applyFrame(frame.index)
+      this._applyFrame(frame)
     }
   }
 
@@ -251,15 +256,11 @@ export class InputPlayback {
     if (!this._recording) return
     for (const frame of this._recording.frames) {
       if (frame.index > toInclusive) break
-      this._applyFrame(frame.index)
+      this._applyFrame(frame)
     }
   }
 
-  private _applyFrame(frameIndex: number): void {
-    if (!this._recording) return
-    const frame = this._recording.frames.find(f => f.index === frameIndex)
-    if (!frame) return
-
+  private _applyFrame(frame: InputRecordingFrame): void {
     for (const change of frame.changes) {
       const pi = change.player
       if (!this._accumulated[pi]) continue

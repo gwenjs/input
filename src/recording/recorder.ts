@@ -9,6 +9,9 @@ import { type InputRecording, type InputRecordingState } from './types.js'
  *
  * Obtain an instance via `useInput().recorder` or `useInputRecorder()`.
  *
+ * @remarks `holdTime` is not recorded or replayed. Systems depending on `holdTime`
+ * (e.g. Hold interactions checking exact hold duration) will see `holdTime: 0` during playback.
+ *
  * @example
  * ```typescript
  * const recorder = useInputRecorder()
@@ -143,15 +146,15 @@ export class InputRecorder {
 
   /**
    * Captures the current frame's action states from all players.
-   * Called by the plugin's `onBeforeUpdate` pipeline after all players have updated.
+   * Called by the plugin's `onAfterUpdate` pipeline after all players have updated.
    *
    * Only emits a frame entry when at least one action value has changed
    * relative to the previous captured frame (delta encoding).
    *
    * @internal
-   * @param frameIndex - The current absolute frame index.
+   * @param _frameIndex - The current absolute frame index (unused; kept for call-site compatibility).
    */
-  _captureFrame(frameIndex: number): void {
+  _captureFrame(_frameIndex: number): void {
     if (this._state !== 'recording') return
 
     const changes: {
@@ -185,7 +188,7 @@ export class InputRecorder {
     }
 
     if (changes.length > 0) {
-      this._frames.push({ index: frameIndex, changes: Object.freeze(changes) })
+      this._frames.push({ index: this._frameCount, changes: Object.freeze(changes) })
     }
 
     this._frameCount++

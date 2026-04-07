@@ -92,14 +92,14 @@ export namespace InputRecording {
         `[@gwenjs/input] InputRecording.fromJSON: unsupported version "${String(r['version'])}" (expected 1)`,
       )
     }
-    if (typeof r['frameCount'] !== 'number' || r['frameCount'] < 0) {
-      throw new Error('[@gwenjs/input] InputRecording.fromJSON: invalid frameCount')
+    if (typeof r['frameCount'] !== 'number' || !Number.isInteger(r['frameCount']) || r['frameCount'] < 0) {
+      throw new Error('[@gwenjs/input] InputRecording.fromJSON: frameCount must be a non-negative integer')
     }
     if (typeof r['targetFps'] !== 'number' || r['targetFps'] <= 0) {
       throw new Error('[@gwenjs/input] InputRecording.fromJSON: invalid targetFps')
     }
-    if (typeof r['playerCount'] !== 'number' || r['playerCount'] < 1) {
-      throw new Error('[@gwenjs/input] InputRecording.fromJSON: invalid playerCount')
+    if (typeof r['playerCount'] !== 'number' || !Number.isInteger(r['playerCount']) || r['playerCount'] < 1) {
+      throw new Error('[@gwenjs/input] InputRecording.fromJSON: playerCount must be a positive integer')
     }
     if (!Array.isArray(r['actionNames']) || r['actionNames'].some(n => typeof n !== 'string')) {
       throw new Error('[@gwenjs/input] InputRecording.fromJSON: actionNames must be a string[]')
@@ -128,6 +128,9 @@ export namespace InputRecording {
         const ch = c as Record<string, unknown>
         if (typeof ch['player'] !== 'number') {
           throw new Error(`[@gwenjs/input] InputRecording.fromJSON: changes[${ci}].player must be a number`)
+        }
+        if (ch['player'] < 0 || ch['player'] >= (r['playerCount'] as number)) {
+          throw new Error(`[@gwenjs/input] InputRecording.fromJSON: change.player ${ch['player'] as number} out of bounds`)
         }
         if (typeof ch['actionIndex'] !== 'number' || ch['actionIndex'] < 0 || ch['actionIndex'] >= actionCount) {
           throw new Error(

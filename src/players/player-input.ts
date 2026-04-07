@@ -517,8 +517,7 @@ export class PlayerInput {
   // ── Recording / playback internals ──────────────────────────────────────────
 
   /**
-   * Returns all binding entries from every registered context, paired with
-   * their context name. Used by `InputDebugAPIImpl.getBindingMap()`.
+   * Returns all binding entries across all registered contexts for this player.
    * @internal
    */
   _getAllContextBindings(): Array<{ contextName: string; binding: BindingEntry }> {

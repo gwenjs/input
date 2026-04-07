@@ -55,6 +55,11 @@ export class InputPlayback {
 
   // ── Read-only state ─────────────────────────────────────────────────────────
 
+  /** The current playback state. */
+  get state(): InputRecordingState {
+    return this._state
+  }
+
   /** `true` while playback is active (not paused and not stopped). */
   get isPlaying(): boolean {
     return this._state === 'playing'

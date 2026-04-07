@@ -192,8 +192,12 @@ export interface InputDebugAPI {
   /**
    * Returns a point-in-time snapshot of the entire input system.
    * Safe to call at any time; reflects the state as of the last `_tick`.
+   *
+   * @param timestamp - Optional wall-clock timestamp (ms) to embed in the snapshot.
+   *   When omitted, `Date.now()` is used. Pass the same value used in `_tick` to
+   *   keep timestamps consistent within a single frame.
    */
-  getSnapshot(): InputDebugSnapshot
+  getSnapshot(timestamp?: number): InputDebugSnapshot
 
   /**
    * Returns the last `lastN` trigger/release events for a named action.
@@ -348,8 +352,6 @@ export class InputDebugAPIImpl implements InputDebugAPI {
   private readonly _prevBindingFingerprints: string[] = []
   /** Previous recording state. */
   private _prevRecordingState: InputRecordingState = 'idle'
-  /** Previous gamepad connection states [slot 0..3]. */
-  private readonly _prevGamepads: boolean[] = [false, false, false, false]
 
   constructor(
     private readonly _players: readonly PlayerInput[],
@@ -375,8 +377,8 @@ export class InputDebugAPIImpl implements InputDebugAPI {
    */
   _tick(frameIndex: number): void {
     this._frame = frameIndex
-    const snap = this.getSnapshot()
     const now = Date.now()
+    const snap = this.getSnapshot(now)
 
     // Fire frame listeners
     for (const cb of this._frameListeners) cb(snap)
@@ -456,7 +458,7 @@ export class InputDebugAPIImpl implements InputDebugAPI {
     }
 
     // ── onRecordingStateChanged ─────────────────────────────────────────────
-    const recState = this._service.recorder.state
+    const recState = this._combinedRecState()
     if (recState !== this._prevRecordingState) {
       this._prevRecordingState = recState
       const totalFrames = recState === 'recording'
@@ -466,33 +468,19 @@ export class InputDebugAPIImpl implements InputDebugAPI {
         cb({ frame: frameIndex, state: recState, totalFrames })
       }
     }
-
-    // ── onDeviceChanged for gamepads (hardware connect/disconnect) ──────────
-    for (let slot = 0; slot < 4; slot++) {
-      const connected = this._devices.gamepad.isConnected(slot)
-      if (connected !== this._prevGamepads[slot]) {
-        this._prevGamepads[slot] = connected
-        // Find the player assigned to this gamepad slot and fire the event
-        for (const player of this._players) {
-          if (player.assignedDevice.type === 'gamepad' && player.assignedDevice.slot === slot) {
-            for (const cb of this._deviceChangedListeners) {
-              cb({ frame: frameIndex, player: player.index, device: player.assignedDevice })
-            }
-          }
-        }
-      }
-    }
   }
 
   // ── InputDebugAPI ─────────────────────────────────────────────────────────
 
   /** {@inheritDoc InputDebugAPI.getSnapshot} */
-  getSnapshot(): InputDebugSnapshot {
-    const timestamp = Date.now()
+  getSnapshot(timestamp?: number): InputDebugSnapshot {
+    const ts = timestamp ?? Date.now()
     const frame = this._frame
 
-    const recState = this._service.recorder.state
-    const recFrame = this._service.playback.currentFrame
+    const recState = this._combinedRecState()
+    const recFrame = recState === 'recording'
+      ? this._service.recorder.frameCount
+      : this._service.playback.currentFrame
     const recTotalFrames = recState === 'recording'
       ? this._service.recorder.frameCount
       : this._service.playback.frameCount
@@ -549,7 +537,7 @@ export class InputDebugAPIImpl implements InputDebugAPI {
     const touchAvailable = typeof navigator !== 'undefined' ? navigator.maxTouchPoints > 0 : false
 
     return {
-      timestamp,
+      timestamp: ts,
       frame,
       players,
       devices: {
@@ -633,6 +621,14 @@ export class InputDebugAPIImpl implements InputDebugAPI {
       this._actionHistory.set(actionName, ring)
     }
     ring.push(event)
-    if (ring.length > MAX_HISTORY) ring.splice(0, ring.length - MAX_HISTORY)
+    if (ring.length > MAX_HISTORY) ring.shift()
+  }
+
+  private _combinedRecState(): InputRecordingState {
+    const rs = this._service.recorder.state
+    if (rs === 'recording') return 'recording'
+    const ps = this._service.playback.state
+    if (ps === 'playing' || ps === 'paused') return ps
+    return 'idle'
   }
 }

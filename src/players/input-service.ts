@@ -5,6 +5,7 @@ import type { MouseDevice } from '../devices/mouse.js'
 import type { GamepadDevice } from '../devices/gamepad.js'
 import type { TouchDevice } from '../devices/touch.js'
 import type { GyroDevice } from '../devices/gyro.js'
+import type { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
 
 export interface InputServiceDevices {
   keyboard: KeyboardDevice
@@ -12,6 +13,8 @@ export interface InputServiceDevices {
   gamepad: GamepadDevice
   touch: TouchDevice
   gyro: GyroDevice
+  /** Optional virtual on-screen controls overlay. Present only if configured. */
+  virtualControls?: VirtualControlsOverlay
 }
 
 /**
@@ -88,5 +91,10 @@ export class InputService {
   /** The gyro device instance. */
   get gyro(): GyroDevice {
     return this._devices.gyro
+  }
+
+  /** The virtual controls overlay instance, if configured. */
+  get virtualControls(): VirtualControlsOverlay | undefined {
+    return this._devices.virtualControls
   }
 }

@@ -12,6 +12,7 @@ import { MouseDevice } from '../devices/mouse.js'
 import { GamepadDevice } from '../devices/gamepad.js'
 import { TouchDevice } from '../devices/touch.js'
 import { GyroDevice } from '../devices/gyro.js'
+import { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
 
 export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig } from './config.js'
 
@@ -91,6 +92,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
   let gamepad: GamepadDevice | undefined
   let touch: TouchDevice | undefined
   let gyro: GyroDevice | undefined
+  let virtualControls: VirtualControlsOverlay | undefined
 
   /** All player instances created during setup. */
   let players: PlayerInput[] = []
@@ -113,7 +115,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         keyboard.attach(cfg.eventTarget)
         mouse.attach(cfg.eventTarget, cfg.canvas ?? undefined)
         gamepad.attach(window)
-        touch.attach(cfg.eventTarget)
+        touch.attach(cfg.eventTarget, cfg.canvas ?? undefined)
         gyro.attach(window)
 
         gamepad.onConnect = (padIndex) => {
@@ -121,6 +123,18 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         }
         gamepad.onDisconnect = (padIndex) => {
           engine.hooks.callHook('input:deviceChanged', 'gamepad', 'disconnected', padIndex)
+        }
+
+        // ── Virtual controls overlay ───────────────────────────────────────
+        if (cfg.touch.enabled && (cfg.touch.virtualJoysticks.length > 0 || cfg.touch.virtualButtons.length > 0)) {
+          virtualControls = new VirtualControlsOverlay(cfg.touch.forceVirtualControls)
+          for (const jsCfg of cfg.touch.virtualJoysticks) {
+            virtualControls.addJoystick(jsCfg)
+          }
+          for (const btnCfg of cfg.touch.virtualButtons) {
+            virtualControls.addButton(btnCfg)
+          }
+          virtualControls.attach()
         }
       }
 
@@ -149,7 +163,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
           keyboard: keyboard!,
           mouse: mouse!,
           gamepad: gamepad!,
+          touch: touch!,
           gyro: gyro!,
+          virtualControls,
         }
 
         const bindingsChangedCb = cfg.onBindingsChanged
@@ -175,6 +191,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         gamepad: gamepad!,
         touch: touch!,
         gyro: gyro!,
+        virtualControls,
       })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(engine as any).provide('input', inputService)
@@ -204,6 +221,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         gamepad?.detach(window)
         touch?.detach(cfg.eventTarget)
         gyro?.detach(window)
+        virtualControls?.detach()
       }
       log?.info('torn down')
     },

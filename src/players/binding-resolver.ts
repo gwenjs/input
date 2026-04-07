@@ -1,8 +1,10 @@
-import type { BindingSource, CompositeSource, Composite1DSource } from '../contexts/binding.js'
+import type { BindingSource, CompositeSource, Composite1DSource, GestureSource, VirtualSource } from '../contexts/binding.js'
 import type { KeyboardDevice } from '../devices/keyboard.js'
 import type { MouseDevice } from '../devices/mouse.js'
 import type { GamepadDevice } from '../devices/gamepad.js'
+import type { TouchDevice } from '../devices/touch.js'
 import type { GyroDevice } from '../devices/gyro.js'
+import type { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
 
 /** The device type category for a player's assigned input method. */
 export type DeviceType = 'keyboard+mouse' | 'gamepad' | 'touch'
@@ -17,12 +19,15 @@ export interface DeviceAssignment {
   slot: number
 }
 
-/** All four device instances available to a single player. */
+/** All device instances available to a single player. */
 export interface DeviceSet {
   keyboard: KeyboardDevice
   mouse: MouseDevice
   gamepad: GamepadDevice
+  touch: TouchDevice
   gyro: GyroDevice
+  /** Optional virtual on-screen controls overlay. Present only if configured in `InputPluginConfig.touch`. */
+  virtualControls?: VirtualControlsOverlay
 }
 
 /**
@@ -118,6 +123,24 @@ export function resolveSource(
         return devices.gyro.orientation.yaw
       case 'gyro:rotation-rate':
         return { x: devices.gyro.velocity.beta, y: devices.gyro.velocity.gamma }
+
+      // Touch gesture sources
+      case 'gesture:tap':
+      case 'gesture:swipe':
+      case 'gesture:pinch':
+      case 'gesture:rotate': {
+        const gs = source as GestureSource
+        return devices.touch.isGestureActive(gs)
+          ? devices.touch.getGestureValue(gs)
+          : false
+      }
+
+      // Virtual control sources
+      case 'virtual:joystick':
+        return devices.virtualControls?.getJoystickValue((source as VirtualSource).id) ?? { x: 0, y: 0 }
+
+      case 'virtual:button':
+        return devices.virtualControls?.isButtonPressed((source as VirtualSource).id) ?? false
     }
   }
 

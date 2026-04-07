@@ -13,6 +13,9 @@ export * from './devices/index.js'
 export * from './processors/index.js'
 export * from './interactions/index.js'
 
+// Virtual controls
+export { VirtualControlsOverlay } from './virtual/index.js'
+
 // Composables
 export { useInput, usePlayer } from './composables.js'
 export * from './composables/index.js'

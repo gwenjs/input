@@ -22,4 +22,5 @@ export { GyroDevice } from './gyro.js'
 
 export type { KeyState } from './keyboard.js'
 export type { MouseButtonState, MousePosition } from './mouse.js'
+export type { TouchPoint } from './touch.js'
 export type { GyroState, GyroVelocity } from './gyro.js'

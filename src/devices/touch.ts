@@ -138,9 +138,9 @@ export class TouchDevice implements InputDevice {
       }
     }
 
-    // Reset moved touches to stationary
+    // Reset moved/began touches to stationary
     for (const point of this._points.values()) {
-      if (point.phase === 'moved') {
+      if (point.phase === 'moved' || point.phase === 'began') {
         point.phase = 'stationary'
         point.deltaPosition = { x: 0, y: 0 }
       }
@@ -183,9 +183,12 @@ export class TouchDevice implements InputDevice {
       return this._firedGestures.some((g) => g.type === 'gesture:tap' && g.meta.fingers === fingers)
     }
     if (type === 'gesture:swipe') {
-      const direction = source.direction
+      const direction = source.direction as string
+      const fingers = typeof source.fingers === 'number' ? source.fingers : 1
       return this._firedGestures.some(
-        (g) => g.type === 'gesture:swipe' && g.meta.direction === direction
+        (g) => g.type === 'gesture:swipe'
+          && g.meta.direction === direction
+          && g.meta.fingers === fingers,
       )
     }
     if (type === 'gesture:pinch') return this._pinchActive && this._pinchDelta !== 0
@@ -292,7 +295,7 @@ export class TouchDevice implements InputDevice {
       const dy = point.position.y - point.startPosition.y
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      if (duration < 300 && distance < 15) {
+      if (duration < 200 && distance < 10) {
         this._firedGestures.push({
           type: 'gesture:tap',
           value: 1.0,
@@ -302,7 +305,9 @@ export class TouchDevice implements InputDevice {
 
       // Swipe detection
       const minDistance = 50
-      if (distance >= minDistance) {
+      const velocity = distance / duration // px/ms
+      const minVelocity = 0.3 // px/ms
+      if (distance >= minDistance && velocity >= minVelocity) {
         const absX = Math.abs(dx)
         const absY = Math.abs(dy)
         let direction: string
@@ -314,7 +319,7 @@ export class TouchDevice implements InputDevice {
         this._firedGestures.push({
           type: 'gesture:swipe',
           value: 1.0,
-          meta: { direction, distance },
+          meta: { direction, distance, fingers: point.startFingerCount },
         })
       }
     }

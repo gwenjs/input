@@ -213,8 +213,8 @@ export class VirtualControlsOverlay {
     // Touch start handler
     const handleTouchStart = (e: TouchEvent): void => {
       e.preventDefault()
-      if (state.activeTouchId === null && e.touches.length > 0) {
-        const touch = e.touches[0]
+      if (state.activeTouchId === null && e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0]
         state.activeTouchId = touch.identifier
       }
     }
@@ -351,8 +351,8 @@ export class VirtualControlsOverlay {
     // Touch start handler
     const handleTouchStart = (e: TouchEvent): void => {
       e.preventDefault()
-      if (state.activeTouchId === null && e.touches.length > 0) {
-        const touch = e.touches[0]
+      if (state.activeTouchId === null && e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0]
         state.activeTouchId = touch.identifier
         state.pressed = true
         el.style.background = `rgba(255,255,255,${opacity * 0.5})`

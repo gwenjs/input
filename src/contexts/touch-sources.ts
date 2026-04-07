@@ -14,7 +14,8 @@ export const TouchGesture = {
    *
    * @param options - Tap configuration.
    * @param options.fingers - Number of fingers required (default: 1).
-   * @param options.maxDuration - Maximum press duration in seconds to count as a tap (default: 0.3).
+   * @param options.maxDuration - Documentation hint only. Tap detection uses a global 200ms / 10px
+   *   threshold. Per-binding threshold configuration is not yet supported.
    *
    * @example
    * ```typescript
@@ -31,11 +32,13 @@ export const TouchGesture = {
    *
    * @param options - Swipe configuration.
    * @param options.direction - Required swipe direction.
-   * @param options.minDistance - Minimum swipe distance in pixels (default: 50).
+   * @param options.minDistance - Documentation hint only. Swipe detection uses a global 50px
+   *   minimum distance and 0.3 px/ms minimum velocity threshold.
+   *   Per-binding threshold configuration is not yet supported.
    *
    * @example
    * ```typescript
-   * bind(Roll, TouchGesture.Swipe({ direction: 'right', minDistance: 80 }))
+   * bind(Roll, TouchGesture.Swipe({ direction: 'right' }))
    * ```
    */
   Swipe(options: { direction: 'up' | 'down' | 'left' | 'right'; minDistance?: number }): GestureSource {
@@ -45,7 +48,7 @@ export const TouchGesture = {
   /**
    * A two-finger pinch gesture → `axis1d` source.
    *
-   * Emits a scale delta: positive = pinching in (zoom out), negative = spreading (zoom in).
+   * Emits a scale delta: positive = spreading apart (zoom in), negative = pinching together (zoom out).
    *
    * @example
    * ```typescript

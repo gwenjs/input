@@ -31,7 +31,7 @@ interface TapState {
   wasPressed: boolean
   elapsed: number
   cancelled: boolean
-  fired: boolean
+  pendingRelease: boolean
 }
 
 interface HoldState {
@@ -101,7 +101,7 @@ export class InteractionPipeline {
           this.releaseStates.push({ wasPressed: false })
           break
         case 'tap':
-          this.tapStates.push({ wasPressed: false, elapsed: 0, cancelled: false, fired: false })
+          this.tapStates.push({ wasPressed: false, elapsed: 0, cancelled: false, pendingRelease: false })
           break
         case 'hold':
           this.holdStates.push({ accumulated: 0, wasTriggered: false })
@@ -149,14 +149,23 @@ export class InteractionPipeline {
     let oi = 0 // toggle
     let ei = 0 // repeat
 
+    // Pre-pass: resolve all ChordedWith conditions before any descriptor runs
     for (const p of this.descriptors) {
-      // ChordedWith: suppress rawPressed for this frame if condition not met
       if (p._type === 'chordedwith') {
         const depState = getActionState?.(p.actionId as symbol) ?? null
         const conditionMet = p.condition === 'isPressed'
-          ? depState?.isPressed ?? false
-          : depState?.isJustTriggered ?? false
-        if (!conditionMet) rawPressed = false
+          ? (depState?.isPressed ?? false)
+          : (depState?.isJustTriggered ?? false)
+        if (!conditionMet) {
+          rawPressed = false
+          break
+        }
+      }
+    }
+
+    for (const p of this.descriptors) {
+      // ChordedWith: already resolved in pre-pass above
+      if (p._type === 'chordedwith') {
         continue
       }
 
@@ -195,13 +204,20 @@ export class InteractionPipeline {
         case 'tap': {
           const s = this.tapStates[ti++]
           const maxDuration = p.maxDuration as number
+
+          // Consume pending release from the previous frame's tap trigger
+          if (s.pendingRelease) {
+            isJustReleased = true
+            s.pendingRelease = false
+          }
+
           const justPressed = rawPressed && !s.wasPressed
           const justReleased = !rawPressed && s.wasPressed
 
           if (justPressed) {
             s.elapsed = 0
             s.cancelled = false
-            s.fired = false
+            s.pendingRelease = false
           }
 
           if (rawPressed) {
@@ -211,13 +227,7 @@ export class InteractionPipeline {
 
           if (justReleased && !s.cancelled) {
             isJustTriggered = true
-            s.fired = true
-          }
-
-          // isJustReleased: one frame after firing
-          if (s.fired && justReleased) {
-            isJustReleased = true
-            s.fired = false
+            s.pendingRelease = true
           }
 
           s.wasPressed = rawPressed
@@ -324,11 +334,16 @@ export class InteractionPipeline {
             isPressed = true
             if (s.delayRemaining > 0) {
               s.delayRemaining -= dt
+              if (s.delayRemaining <= 0) {
+                // Carry overshoot into the interval timer
+                s.intervalRemaining = interval + s.delayRemaining // delayRemaining is negative
+                s.delayRemaining = 0
+              }
             } else {
               s.intervalRemaining -= dt
               if (s.intervalRemaining <= 0) {
                 isJustTriggered = true
-                s.intervalRemaining = interval + s.intervalRemaining // carry over remainder
+                s.intervalRemaining += interval // carry over remainder
               }
             }
           }

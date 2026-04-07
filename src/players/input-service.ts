@@ -1,5 +1,18 @@
 import type { ActionRef, ActionType, ActionState } from '../types.js'
 import type { PlayerInput } from './player-input.js'
+import type { KeyboardDevice } from '../devices/keyboard.js'
+import type { MouseDevice } from '../devices/mouse.js'
+import type { GamepadDevice } from '../devices/gamepad.js'
+import type { TouchDevice } from '../devices/touch.js'
+import type { GyroDevice } from '../devices/gyro.js'
+
+export interface InputServiceDevices {
+  keyboard: KeyboardDevice
+  mouse: MouseDevice
+  gamepad: GamepadDevice
+  touch: TouchDevice
+  gyro: GyroDevice
+}
 
 /**
  * Global input service — provides access to all `PlayerInput` instances.
@@ -15,9 +28,11 @@ import type { PlayerInput } from './player-input.js'
  */
 export class InputService {
   private readonly _players: PlayerInput[]
+  private readonly _devices: InputServiceDevices
 
-  constructor(players: PlayerInput[]) {
+  constructor(players: PlayerInput[], devices: InputServiceDevices) {
     this._players = players
+    this._devices = devices
   }
 
   /**
@@ -48,5 +63,30 @@ export class InputService {
    */
   action<T extends ActionType>(ref: ActionRef<T>): ActionState<T> {
     return this._players[0].action(ref)
+  }
+
+  /** The keyboard device instance. */
+  get keyboard(): KeyboardDevice {
+    return this._devices.keyboard
+  }
+
+  /** The mouse device instance. */
+  get mouse(): MouseDevice {
+    return this._devices.mouse
+  }
+
+  /** The gamepad device instance. */
+  get gamepad(): GamepadDevice {
+    return this._devices.gamepad
+  }
+
+  /** The touch device instance. */
+  get touch(): TouchDevice {
+    return this._devices.touch
+  }
+
+  /** The gyro device instance. */
+  get gyro(): GyroDevice {
+    return this._devices.gyro
   }
 }

@@ -14,7 +14,8 @@ export * from './processors/index.js'
 export * from './interactions/index.js'
 
 // Composables
-export { useInput } from './composables.js'
+export { useInput, usePlayer } from './composables.js'
+export * from './composables/index.js'
 
 // Players
 export * from './players/index.js'

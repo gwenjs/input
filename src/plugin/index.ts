@@ -169,7 +169,13 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         ;(engine as any).provide(`player:${i}`, player)
       }
 
-      const inputService = new InputService(players)
+      const inputService = new InputService(players, {
+        keyboard: keyboard!,
+        mouse: mouse!,
+        gamepad: gamepad!,
+        touch: touch!,
+        gyro: gyro!,
+      })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(engine as any).provide('input', inputService)
 

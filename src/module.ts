@@ -23,6 +23,14 @@ export default defineGwenModule<InputPluginConfig>({
 
     kit.addAutoImports([
       { name: 'useInput', from: '@gwenjs/input' },
+      { name: 'useAction', from: '@gwenjs/input' },
+      { name: 'usePlayer', from: '@gwenjs/input' },
+      { name: 'useKeyboard', from: '@gwenjs/input' },
+      { name: 'useMouse', from: '@gwenjs/input' },
+      { name: 'useGamepad', from: '@gwenjs/input' },
+      { name: 'useTouch', from: '@gwenjs/input' },
+      { name: 'useGyro', from: '@gwenjs/input' },
+      { name: 'usePointer', from: '@gwenjs/input' },
       // useAction and usePlayer added in Phase 7 (composables)
       { name: 'defineInputSchema', from: '@gwenjs/input' },
       { name: 'defineInputContext', from: '@gwenjs/input' },

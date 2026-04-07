@@ -288,8 +288,11 @@ describe("useInputPlayback composable", () => {
 });
 
 describe("usePointer composable", () => {
+  const mockTouch = { isTouching: vi.fn().mockReturnValue(false), points: new Map() };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTouch.isTouching.mockReturnValue(false);
   });
 
   it("returns mouse-based pointer state when no touch", () => {
@@ -300,7 +303,7 @@ describe("usePointer composable", () => {
       isButtonJustPressed: vi.fn().mockReturnValue(false),
       isButtonJustReleased: vi.fn().mockReturnValue(false),
     };
-    mockEngine.tryInject.mockReturnValue({ mouse: mockMouse });
+    mockEngine.tryInject.mockReturnValue({ mouse: mockMouse, touch: mockTouch });
 
     const result = usePointer();
 
@@ -320,10 +323,42 @@ describe("usePointer composable", () => {
       isButtonJustPressed: vi.fn().mockReturnValue(true),
       isButtonJustReleased: vi.fn().mockReturnValue(false),
     };
-    mockEngine.tryInject.mockReturnValue({ mouse: mockMouse });
+    mockEngine.tryInject.mockReturnValue({ mouse: mockMouse, touch: mockTouch });
 
     const result = usePointer();
 
+    expect(result.isPressed).toBe(true);
+    expect(result.isJustPressed).toBe(true);
+  });
+
+  it("returns touch-based pointer state when touching", () => {
+    const touchPoint = {
+      id: 1,
+      position: { x: 300, y: 400 },
+      deltaPosition: { x: 10, y: -5 },
+      phase: "began" as const,
+      timestamp: 0,
+    };
+    const touchingMock = {
+      isTouching: vi.fn().mockReturnValue(true),
+      points: new Map([[1, touchPoint]]),
+    };
+    const mockMouse = {
+      position: { x: 0, y: 0 },
+      delta: { x: 0, y: 0 },
+      isButtonPressed: vi.fn().mockReturnValue(false),
+      isButtonJustPressed: vi.fn().mockReturnValue(false),
+      isButtonJustReleased: vi.fn().mockReturnValue(false),
+    };
+    mockEngine.tryInject.mockReturnValue({ mouse: mockMouse, touch: touchingMock });
+
+    const result = usePointer();
+
+    expect(result.type).toBe("touch");
+    expect(result.position.x).toBe(300);
+    expect(result.position.y).toBe(400);
+    expect(result.delta.x).toBe(10);
+    expect(result.delta.y).toBe(-5);
     expect(result.isPressed).toBe(true);
     expect(result.isJustPressed).toBe(true);
   });

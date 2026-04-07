@@ -1,10 +1,12 @@
 import { useMouse } from "./use-mouse.js";
-// import { useTouch } from './use-touch.js' // TODO Phase 6: re-enable when TouchDevice is implemented
+import { useTouch } from "./use-touch.js";
 
 /**
  * Unified pointer state — abstracts mouse and touch into a single interface.
  * On desktop: `position` = mouse position, `isPressed` = left mouse button.
  * On touch: `position` = first touch point, `isPressed` = any touch active.
+ *
+ * Touch takes priority over mouse when any touch point is active.
  */
 export interface PointerState {
   readonly position: Readonly<{ x: number; y: number }>;
@@ -36,17 +38,20 @@ export interface PointerState {
  */
 export function usePointer(): PointerState {
   const mouse = useMouse();
+  const touch = useTouch();
 
-  // TODO Phase 6: replace with touch.isTouching() when TouchDevice is implemented
-  const isTouching = false;
+  if (touch.isTouching()) {
+    // Use the first active touch point as the pointer
+    const firstPoint = touch.points.values().next().value;
+    const position = firstPoint ? firstPoint.position : { x: 0, y: 0 };
+    const delta = firstPoint ? firstPoint.deltaPosition : { x: 0, y: 0 };
 
-  if (isTouching) {
     return {
       type: "touch",
-      position: { x: 0, y: 0 },
-      delta: { x: 0, y: 0 },
-      isPressed: isTouching,
-      isJustPressed: false,
+      position,
+      delta,
+      isPressed: true,
+      isJustPressed: firstPoint?.phase === "began",
       isJustReleased: false,
     };
   }

@@ -185,9 +185,9 @@ export class InteractionPipeline {
         continue;
       }
 
-      // AllOf: Phase 5 will wire device access; descriptor only — no-op in pipeline
+      // AllOf: evaluated in PlayerInput._evaluateButtonBindings before pipeline runs.
+      // The pipeline itself has no device access — gate is applied to rawPressed upstream.
       if (p._type === "allof") {
-        // TODO(Phase 5): check all keys via device state resolver
         continue;
       }
 

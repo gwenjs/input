@@ -214,4 +214,16 @@ export class MouseDevice implements InputDevice {
   isButtonJustReleased(btn: number): boolean {
     return this.buttonStates.get(btn) === "justReleased";
   }
+
+  /**
+   * Returns all button indices that transitioned to pressed this frame.
+   * Used by `captureNextInput` to detect the first mouse button press.
+   */
+  getJustPressedButtons(): number[] {
+    const btns: number[] = [];
+    for (const [btn, state] of this.buttonStates) {
+      if (state === "justPressed") btns.push(btn);
+    }
+    return btns;
+  }
 }

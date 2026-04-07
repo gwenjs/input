@@ -303,6 +303,38 @@ describe("PlayerInput", () => {
     expect(result).toBeNull();
   });
 
+  it("captureNextInput resolves with keyboard key on just-press", async () => {
+    const { player, devices } = makePlayer();
+    devices.keyboard.attach(window);
+
+    const promise = player.captureNextInput({ timeout: 5000 });
+
+    // Simulate a keydown event
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "Space" }));
+    // Advance one frame so keyboard state transitions to justPressed
+    devices.keyboard.update();
+    player._updateFrame(0.016);
+
+    const result = await promise;
+    expect(result).toBe("Space");
+    devices.keyboard.detach(window);
+  });
+
+  it("captureNextInput resolves with mouse button on just-press", async () => {
+    const { player, devices } = makePlayer();
+    devices.mouse.attach(window);
+
+    const promise = player.captureNextInput({ timeout: 5000 });
+
+    window.dispatchEvent(new MouseEvent("mousedown", { button: 0 }));
+    devices.mouse.update();
+    player._updateFrame(0.016);
+
+    const result = await promise;
+    expect(result).toBe(0);
+    devices.mouse.detach(window);
+  });
+
   it("uses playback states when available", () => {
     const { player } = makePlayer();
     const action = defineAction("jump", { type: "button" });

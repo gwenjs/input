@@ -134,4 +134,16 @@ export class KeyboardDevice implements InputDevice {
   isJustReleased(key: string): boolean {
     return this.states.get(key) === "justReleased";
   }
+
+  /**
+   * Returns all key codes that transitioned to pressed this frame.
+   * Used by `captureNextInput` to detect the first key press.
+   */
+  getJustPressedKeys(): string[] {
+    const keys: string[] = [];
+    for (const [key, state] of this.states) {
+      if (state === "justPressed") keys.push(key);
+    }
+    return keys;
+  }
 }

@@ -151,14 +151,51 @@ export class PlayerInput {
    * @internal
    */
   _updateFrame(dt: number): void {
-    // Tick captureNextInput timeout
-    if (this._captureTimeoutMs !== null) {
-      this._captureTimeoutMs -= dt * 1000;
-      if (this._captureTimeoutMs <= 0) {
+    // Tick captureNextInput timeout and scan for first just-pressed input
+    if (this._captureResolve !== null) {
+      // Scan keyboard
+      const justPressedKeys = this._devices.keyboard.getJustPressedKeys();
+      if (justPressedKeys.length > 0) {
         const resolve = this._captureResolve;
         this._captureResolve = null;
         this._captureTimeoutMs = null;
-        resolve?.(null);
+        resolve(justPressedKeys[0]);
+        return;
+      }
+
+      // Scan mouse buttons
+      const justPressedBtns = this._devices.mouse.getJustPressedButtons();
+      if (justPressedBtns.length > 0) {
+        const resolve = this._captureResolve;
+        this._captureResolve = null;
+        this._captureTimeoutMs = null;
+        resolve(justPressedBtns[0]);
+        return;
+      }
+
+      // Scan gamepad buttons on the assigned slot
+      const slot = this._deviceAssignment.slot;
+      const btnCount = this._devices.gamepad.getButtonCount(slot);
+      for (let b = 0; b < btnCount; b++) {
+        if (this._devices.gamepad.isButtonJustPressed(slot, b)) {
+          const resolve = this._captureResolve;
+          this._captureResolve = null;
+          this._captureTimeoutMs = null;
+          resolve(b);
+          return;
+        }
+      }
+
+      // Tick timeout
+      if (this._captureTimeoutMs !== null) {
+        this._captureTimeoutMs -= dt * 1000;
+        if (this._captureTimeoutMs <= 0) {
+          const resolve = this._captureResolve;
+          this._captureResolve = null;
+          this._captureTimeoutMs = null;
+          resolve(null);
+          return;
+        }
       }
     }
 
@@ -306,14 +343,19 @@ export class PlayerInput {
   /**
    * Waits for the next input and returns its `BindingSource`.
    *
-   * Useful for "press a button to rebind" UX flows.
+   * Scans keyboard, mouse buttons, and the assigned gamepad slot each frame.
+   * Resolves with the first just-pressed source detected.
    * Resolves `null` if the timeout elapses without input.
+   *
+   * Useful for "press a button to rebind" UX flows.
    *
    * @param options.timeout - Milliseconds to wait. Default: 5000.
    *
-   * @remarks Phase 5 stub — resolves `null` after timeout.
-   * Full implementation (scanning all devices for the first just-pressed input)
-   * is planned for a later phase.
+   * @example
+   * ```typescript
+   * const source = await player.captureNextInput({ timeout: 3000 })
+   * if (source !== null) player.rebind(Jump, 0, source)
+   * ```
    */
   captureNextInput(options?: { timeout?: number }): Promise<BindingSource | null> {
     return new Promise((resolve) => {

@@ -174,4 +174,13 @@ export class GamepadDevice implements InputDevice {
   isConnected(padIndex: number): boolean {
     return this.snapshot[padIndex] != null;
   }
+
+  /**
+   * Returns the number of buttons on the gamepad in the given slot.
+   * Returns 0 if no gamepad is connected in that slot.
+   * @param padIndex Gamepad slot index
+   */
+  getButtonCount(padIndex: number): number {
+    return this.snapshot[padIndex]?.buttons.length ?? 0;
+  }
 }

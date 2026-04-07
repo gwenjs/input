@@ -136,6 +136,20 @@ describe("KeyboardDevice", () => {
     // State should be idle (not justReleased since it was never pressed)
     expect(keyboard.getState("KeyX")).toBe("idle");
   });
+
+  it("getJustPressedKeys returns just-pressed key codes", () => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "Space" }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyA" }));
+    keyboard.update();
+
+    const result = keyboard.getJustPressedKeys();
+    expect(result).toContain("Space");
+    expect(result).toContain("KeyA");
+
+    // Second frame: transitions to held, no longer just-pressed
+    keyboard.update();
+    expect(keyboard.getJustPressedKeys()).toHaveLength(0);
+  });
 });
 
 describe("MouseDevice", () => {
@@ -336,6 +350,20 @@ describe("MouseDevice", () => {
     mouse.update();
     // Should be idle (not justReleased) since it was never in justPressed/held
     expect(mouse.getButtonState(3)).toBe("idle");
+  });
+
+  it("getJustPressedButtons returns just-pressed button indices", () => {
+    window.dispatchEvent(new MouseEvent("mousedown", { button: 0 }));
+    window.dispatchEvent(new MouseEvent("mousedown", { button: 2 }));
+    mouse.update();
+
+    const result = mouse.getJustPressedButtons();
+    expect(result).toContain(0);
+    expect(result).toContain(2);
+
+    // Second frame: transitions to held, no longer just-pressed
+    mouse.update();
+    expect(mouse.getJustPressedButtons()).toHaveLength(0);
   });
 });
 
@@ -555,6 +583,14 @@ describe("GamepadDevice", () => {
     expect(gamepad.isButtonJustPressed(99, 0)).toBe(false);
     expect(gamepad.isButtonJustReleased(99, 0)).toBe(false);
     expect(gamepad.getButtonValue(99, 0)).toBe(0);
+  });
+
+  it("getButtonCount returns button count for connected pad", () => {
+    vi.spyOn(navigator, "getGamepads").mockReturnValue([mockGamepad as Gamepad, null, null, null]);
+    gamepad.update();
+
+    expect(gamepad.getButtonCount(0)).toBe(17); // mockGamepad has 17 buttons
+    expect(gamepad.getButtonCount(1)).toBe(0); // no gamepad in slot 1
   });
 });
 

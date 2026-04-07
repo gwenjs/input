@@ -7,14 +7,13 @@
     "dist"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./module": {
-      "types": "./dist/module.d.ts",
-      "import": "./dist/module.js"
-    }
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./module": { "types": "./dist/module.d.ts", "import": "./dist/module.js" },
+    "./processors": { "types": "./dist/processors/index.d.ts", "import": "./dist/processors/index.js" },
+    "./interactions": { "types": "./dist/interactions/index.d.ts", "import": "./dist/interactions/index.js" },
+    "./constants": { "types": "./dist/constants/index.d.ts", "import": "./dist/constants/index.js" },
+    "./devices": { "types": "./dist/devices/index.d.ts", "import": "./dist/devices/index.js" },
+    "./augment": { "types": "./dist/augment.d.ts", "import": "./dist/augment.js" }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -36,6 +35,7 @@
     "typescript": "^6.0.0",
     "vite": "^8.0.0",
     "vite-plugin-dts": "^4.0.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "@vitest/coverage-v8": "^4.1.2"
   }
 }

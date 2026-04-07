@@ -425,9 +425,8 @@ describe("GamepadDevice", () => {
 
   it("detects button release", () => {
     mockGamepad.buttons[0] = { pressed: true, value: 1, touched: true };
-    const spy = vi
-      .spyOn(navigator, "getGamepads")
-      .mockReturnValue([mockGamepad as Gamepad, null, null, null]);
+    vi.spyOn(navigator, "getGamepads").mockReturnValue([mockGamepad as Gamepad, null, null, null]);
+
 
     gamepad.update();
     gamepad.update();

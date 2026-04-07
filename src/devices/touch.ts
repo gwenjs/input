@@ -113,7 +113,9 @@ export class TouchDevice implements InputDevice {
     target.addEventListener("touchstart", this._onTouchStart as EventListener, { passive: false });
     target.addEventListener("touchmove", this._onTouchMove as EventListener, { passive: false });
     target.addEventListener("touchend", this._onTouchEnd as EventListener, { passive: false });
-    target.addEventListener("touchcancel", this._onTouchCancel as EventListener, { passive: false });
+    target.addEventListener("touchcancel", this._onTouchCancel as EventListener, {
+      passive: false,
+    });
   }
 
   /**

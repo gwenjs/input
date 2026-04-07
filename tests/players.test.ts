@@ -1114,8 +1114,8 @@ describe("PlayerInput rebind and evaluate", () => {
     const result1 = await Promise.race([p1, Promise.resolve("timeout")]);
     expect(result1).toBeNull();
 
-    // Cancel p2 by starting p3
-    const p3 = player.captureNextInput();
+    // Cancel p2 by starting p3 (creating a new capture cancels the previous)
+    void player.captureNextInput();
     await p2; // should resolve to null
     const result2 = await p2;
     expect(result2).toBeNull();

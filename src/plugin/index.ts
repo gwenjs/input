@@ -1,4 +1,3 @@
-// @ts-expect-error — workspace dep not yet installed; resolves in monorepo
 import { definePlugin } from "@gwenjs/kit/plugin";
 import type { GwenEngine } from "@gwenjs/core";
 import { normalizeConfig } from "./config.js";

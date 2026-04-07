@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { InputDebugAPIImpl } from "../src/debug/debug-api.js";
 import { PlayerInput } from "../src/players/player-input.js";
 import { InputService } from "../src/players/input-service.js";

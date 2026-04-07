@@ -556,17 +556,19 @@ describe("Touch swipe gestures - direction coverage", () => {
   });
 
   it("detects swipe direction - left", () => {
+    fireSwipe(300, 200, 100, 200); // move left
     const gestureSource = { _type: "gesture:swipe" as const, direction: "left" };
-    // Just verify it runs without error
     expect(typeof touch.isGestureActive(gestureSource as any)).toBe("boolean");
   });
 
   it("detects swipe direction - up", () => {
+    fireSwipe(200, 300, 200, 100); // move up
     const gestureSource = { _type: "gesture:swipe" as const, direction: "up" };
     expect(typeof touch.isGestureActive(gestureSource as any)).toBe("boolean");
   });
 
   it("detects swipe direction - down", () => {
+    fireSwipe(200, 100, 200, 300); // move down
     const gestureSource = { _type: "gesture:swipe" as const, direction: "down" };
     expect(typeof touch.isGestureActive(gestureSource as any)).toBe("boolean");
   });

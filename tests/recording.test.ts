@@ -884,7 +884,7 @@ describe("InputPlayback - frame advance branch coverage", () => {
   let player: PlayerInput;
 
   beforeEach(() => {
-    const { player: p, context, devices } = makePlayer();
+    const { player: p, context } = makePlayer();
     player = p;
     const action = defineAction("move", { type: "axis2d" });
     const source = {

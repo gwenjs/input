@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { DevOverlay } from "../src/debug/dev-overlay.js";
 import type { InputDebugAPI, InputDebugSnapshot } from "../src/debug/debug-api.js";
 import type { NormalizedDevOverlayConfig } from "../src/plugin/config.js";

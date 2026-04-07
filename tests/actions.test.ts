@@ -1,7 +1,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import { defineAction } from "../src/actions/define-action.js";
 import { defineInputSchema } from "../src/actions/define-input-schema.js";
-import type { ActionRef, ActionSchemaMap } from "../src/types.js";
+import type { ActionRef } from "../src/types.js";
 
 describe("defineAction", () => {
   it("creates a button action with unique symbol ID", () => {

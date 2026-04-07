@@ -9,7 +9,9 @@ import type { GamepadDevice } from "../devices/gamepad.js";
  * Must be called inside an active engine context (inside `defineSystem()`,
  * `engine.run()`, or a plugin lifecycle hook).
  *
- * @param slot - Gamepad slot (currently unused — all gamepads share one `GamepadDevice`). Default: 0.
+ * @param _slot - Gamepad slot index. Currently unused — all gamepads share one `GamepadDevice`
+ *   instance; pass the pad index directly to each method (e.g. `isButtonPressed(0, btn)`).
+ *   Reserved for future per-slot device isolation. Default: 0.
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  *
  * @example
@@ -18,7 +20,7 @@ import type { GamepadDevice } from "../devices/gamepad.js";
  * if (gp.isButtonJustPressed(0, 0)) { ... } // pad 0, button 0
  * ```
  */
-export function useGamepad(slot = 0): GamepadDevice {
+export function useGamepad(_slot = 0): GamepadDevice {
   const engine = useEngine();
   const input = engine.tryInject("input");
   if (!input) {

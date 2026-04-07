@@ -9,14 +9,14 @@
  */
 
 import { defineGwenModule, definePluginTypes } from '@gwenjs/kit'
-import type { InputConfig } from './types.js'
+import type { InputPluginConfig } from './plugin/config.js'
 
-export default defineGwenModule<InputConfig>({
+export default defineGwenModule<InputPluginConfig>({
   meta: { name: '@gwenjs/input' },
   defaults: {},
   async setup(options, kit) {
     // Direct import from plugin.ts — never from index.ts
-    const { InputPlugin } = await import('./plugin.js')
+    const { InputPlugin } = await import('./plugin/index.js')
 
     kit.addPlugin(InputPlugin(options))
 

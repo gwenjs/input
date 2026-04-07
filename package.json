@@ -7,13 +7,34 @@
     "dist"
   ],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./module": { "types": "./dist/module.d.ts", "import": "./dist/module.js" },
-    "./processors": { "types": "./dist/processors/index.d.ts", "import": "./dist/processors/index.js" },
-    "./interactions": { "types": "./dist/interactions/index.d.ts", "import": "./dist/interactions/index.js" },
-    "./constants": { "types": "./dist/constants/index.d.ts", "import": "./dist/constants/index.js" },
-    "./devices": { "types": "./dist/devices/index.d.ts", "import": "./dist/devices/index.js" },
-    "./augment": { "types": "./dist/augment.d.ts", "import": "./dist/augment.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./module": {
+      "types": "./dist/module.d.ts",
+      "import": "./dist/module.js"
+    },
+    "./processors": {
+      "types": "./dist/processors/index.d.ts",
+      "import": "./dist/processors/index.js"
+    },
+    "./interactions": {
+      "types": "./dist/interactions/index.d.ts",
+      "import": "./dist/interactions/index.js"
+    },
+    "./constants": {
+      "types": "./dist/constants/index.d.ts",
+      "import": "./dist/constants/index.js"
+    },
+    "./devices": {
+      "types": "./dist/devices/index.d.ts",
+      "import": "./dist/devices/index.js"
+    },
+    "./augment": {
+      "types": "./dist/augment.d.ts",
+      "import": "./dist/augment.js"
+    }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,16 +47,17 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
-    "@gwenjs/core": "^0.1.0",
-    "@gwenjs/kit": "^0.1.0"
+    "@gwenjs/core": "file:../gwen",
+    "@gwenjs/kit": "file:../gwen"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.2",
+    "jsdom": "^29.0.2",
     "oxfmt": "^0.36.0",
     "oxlint": "^1.51.0",
     "typescript": "^6.0.0",
     "vite": "^8.0.0",
     "vite-plugin-dts": "^4.0.0",
-    "vitest": "^4.0.0",
-    "@vitest/coverage-v8": "^4.1.2"
+    "vitest": "^4.0.0"
   }
 }

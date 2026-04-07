@@ -57,6 +57,13 @@ export class PlayerInput {
   /** Latest axis2d values keyed by ActionRef.id. */
   private readonly _axis2dStates = new Map<symbol, Axis2DState>()
 
+  /**
+   * When `InputPlayback` is active this map overrides live device states.
+   * `action()` reads from here first; null means live input is used.
+   * @internal
+   */
+  _playbackStates: Map<symbol, ActionState<ActionType>> | null = null
+
   /** Optional callback fired after any binding change. */
   private readonly _onBindingsChanged: ((snapshot: BindingsSnapshot) => void) | undefined
 
@@ -196,6 +203,12 @@ export class PlayerInput {
    * ```
    */
   action<T extends ActionType>(ref: ActionRef<T>): ActionState<T> {
+    // Playback takes precedence over live device state.
+    if (this._playbackStates !== null) {
+      const ps = this._playbackStates.get(ref.id)
+      if (ps !== undefined) return ps as ActionState<T>
+    }
+
     if (ref.type === 'button') {
       const r = this._currentStates.get(ref.id)
       return {
@@ -499,5 +512,50 @@ export class PlayerInput {
 
   private _notifyBindingsChanged(): void {
     this._onBindingsChanged?.(this.exportBindings())
+  }
+
+  // ── Recording / playback internals ──────────────────────────────────────────
+
+  /**
+   * Returns all action refs currently registered across all of this player's
+   * input contexts, keyed by `ActionRef.id`.
+   *
+   * Used by `InputRecorder` and `InputPlayback` to enumerate actions without
+   * accessing private context internals directly.
+   *
+   * @internal
+   */
+  _getRegisteredActionRefs(): Map<symbol, ActionRef<ActionType>> {
+    const map = new Map<symbol, ActionRef<ActionType>>()
+    for (const ctx of this._context.getAllRegistered()) {
+      for (const entry of ctx.bindings) {
+        map.set(entry.action.id, entry.action)
+      }
+    }
+    return map
+  }
+
+  /**
+   * Returns the current pressed state for a button action. `false` if unknown.
+   * @internal
+   */
+  _getButtonValue(id: symbol): boolean {
+    return this._currentStates.get(id)?.isPressed ?? false
+  }
+
+  /**
+   * Returns the current processed value for an axis1d action. `0` if unknown.
+   * @internal
+   */
+  _getAxis1dValue(id: symbol): number {
+    return this._axis1dStates.get(id)?.value ?? 0
+  }
+
+  /**
+   * Returns the current processed value for an axis2d action. `{x:0,y:0}` if unknown.
+   * @internal
+   */
+  _getAxis2dValue(id: symbol): { x: number; y: number } {
+    return this._axis2dStates.get(id)?.value ?? { x: 0, y: 0 }
   }
 }

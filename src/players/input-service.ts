@@ -6,6 +6,8 @@ import type { GamepadDevice } from '../devices/gamepad.js'
 import type { TouchDevice } from '../devices/touch.js'
 import type { GyroDevice } from '../devices/gyro.js'
 import type { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
+import type { InputRecorder } from '../recording/recorder.js'
+import type { InputPlayback } from '../recording/playback.js'
 
 export interface InputServiceDevices {
   keyboard: KeyboardDevice
@@ -32,10 +34,14 @@ export interface InputServiceDevices {
 export class InputService {
   private readonly _players: PlayerInput[]
   private readonly _devices: InputServiceDevices
+  private readonly _recorder: InputRecorder
+  private readonly _playback: InputPlayback
 
-  constructor(players: PlayerInput[], devices: InputServiceDevices) {
+  constructor(players: PlayerInput[], devices: InputServiceDevices, recorder: InputRecorder, playback: InputPlayback) {
     this._players = players
     this._devices = devices
+    this._recorder = recorder
+    this._playback = playback
   }
 
   /**
@@ -96,5 +102,21 @@ export class InputService {
   /** The virtual controls overlay instance, if configured. */
   get virtualControls(): VirtualControlsOverlay | undefined {
     return this._devices.virtualControls
+  }
+
+  /**
+   * The `InputRecorder` instance for this plugin.
+   * Use to start/stop recording and export recordings.
+   */
+  get recorder(): InputRecorder {
+    return this._recorder
+  }
+
+  /**
+   * The `InputPlayback` instance for this plugin.
+   * Use to load, play, seek, and stop recorded sessions.
+   */
+  get playback(): InputPlayback {
+    return this._playback
   }
 }

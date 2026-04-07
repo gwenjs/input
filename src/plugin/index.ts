@@ -13,6 +13,9 @@ import { GamepadDevice } from '../devices/gamepad.js'
 import { TouchDevice } from '../devices/touch.js'
 import { GyroDevice } from '../devices/gyro.js'
 import { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
+import { InputRecorder } from '../recording/recorder.js'
+import { InputPlayback } from '../recording/playback.js'
+import type { InputRecording } from '../recording/types.js'
 
 export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig } from './config.js'
 
@@ -96,6 +99,11 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
   /** All player instances created during setup. */
   let players: PlayerInput[] = []
+
+  let recorder: InputRecorder | undefined
+  let playback: InputPlayback | undefined
+  /** Absolute frame counter, incremented each frame during recording. */
+  let recordingFrameIndex = 0
 
   return {
     name: '@gwenjs/input',
@@ -185,22 +193,41 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         ;(engine as any).provide(`player:${i}`, player)
       }
 
-      const inputService = new InputService(players, {
-        keyboard: keyboard!,
-        mouse: mouse!,
-        gamepad: gamepad!,
-        touch: touch!,
-        gyro: gyro!,
-        virtualControls,
-      })
+      const recorder_ = new InputRecorder(players)
+      const playback_ = new InputPlayback(players)
+      recorder = recorder_
+      playback = playback_
+      recordingFrameIndex = 0
+
+      const inputService = new InputService(
+        players,
+        {
+          keyboard: keyboard!,
+          mouse: mouse!,
+          gamepad: gamepad!,
+          touch: touch!,
+          gyro: gyro!,
+          virtualControls,
+        },
+        recorder_,
+        playback_,
+      )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(engine as any).provide('input', inputService)
+
+      // Auto-play a recording supplied in config.
+      if (cfg.recording) {
+        playback_.load(cfg.recording as InputRecording)
+        playback_.play()
+      }
 
       log.info('initialized', { players: cfg.players })
     },
 
     onBeforeUpdate(dt: number) {
       if (typeof window === 'undefined') return
+      // Advance playback before players update so _playbackStates is current.
+      playback?._tick(dt)
       keyboard?.update()
       mouse?.update()
       gamepad?.update()
@@ -210,8 +237,8 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     },
 
     onAfterUpdate() {
-      // TODO Phase 8: flush recording/playback frame buffer
-      // recorder?.flushFrame()
+      // Capture recording frame after all players have updated.
+      recorder?._captureFrame(recordingFrameIndex++)
     },
 
     teardown() {

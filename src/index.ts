@@ -17,11 +17,14 @@ export * from './interactions/index.js'
 export { VirtualControlsOverlay } from './virtual/index.js'
 
 // Composables
-export { useInput, usePlayer } from './composables.js'
+export { useInput, usePlayer, useInputRecorder, useInputPlayback } from './composables.js'
 export * from './composables/index.js'
 
 // Players
 export * from './players/index.js'
+
+// Recording / playback
+export * from './recording/index.js'
 
 // Types
 export type * from './types.js'

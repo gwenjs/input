@@ -1,6 +1,8 @@
 import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
 import type { InputService } from './players/input-service.js'
 import type { PlayerInput } from './players/player-input.js'
+import type { InputRecorder } from './recording/recorder.js'
+import type { InputPlayback } from './recording/playback.js'
 import './augment.js'
 
 /**
@@ -40,4 +42,28 @@ export function useInput(): InputService {
  */
 export function usePlayer(index = 0): PlayerInput {
   return useInput().player(index)
+}
+
+/**
+ * Returns the `InputRecorder` for the active `InputPlugin`.
+ *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
+ * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
+ */
+export function useInputRecorder(): InputRecorder {
+  return useInput().recorder
+}
+
+/**
+ * Returns the `InputPlayback` for the active `InputPlugin`.
+ *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
+ * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
+ */
+export function useInputPlayback(): InputPlayback {
+  return useInput().playback
 }

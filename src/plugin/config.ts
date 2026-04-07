@@ -1,5 +1,6 @@
 import type { InputContextDef } from '../contexts/define-input-context.js'
 import type { BindingsSnapshot } from '../players/bindings-snapshot.js'
+import type { InputRecording } from '../recording/types.js'
 
 // Forward declarations for types defined in later phases
 // (real implementations in Phase 5+)
@@ -37,12 +38,6 @@ export interface DevOverlayConfig {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   /** Overlay opacity (0–1). Default: 0.85. */
   opacity?: number
-}
-
-/** Input recording playback configuration. */
-export interface InputRecordingConfig {
-  // Placeholder — full implementation in Phase 8
-  readonly version: 1
 }
 
 /** Accessibility profile — a named BindingsSnapshot preset. */
@@ -96,7 +91,7 @@ export interface InputPluginConfig {
    */
   devOverlay?: boolean | DevOverlayConfig
   /** Input recording/playback. Pass a recording to auto-play on engine boot. */
-  recording?: InputRecordingConfig
+  recording?: InputRecording
   /**
    * Named accessibility profiles (BindingsSnapshot presets).
    * Activate via `input.player(0).activateAccessibilityProfile('one-handed-left')`.
@@ -156,7 +151,7 @@ export interface NormalizedInputConfig {
     deadZone: number
   }
   devOverlay: false | DevOverlayConfig
-  recording: InputRecordingConfig | null
+  recording: InputRecording | null
   accessibilityProfiles: Record<string, AccessibilityProfile>
   onBindingsChanged: ((playerIndex: number, snapshot: BindingsSnapshot) => void) | null
   initialBindings: (BindingsSnapshot | null)[]

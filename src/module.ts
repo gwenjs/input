@@ -31,6 +31,8 @@ export default defineGwenModule<InputPluginConfig>({
       { name: 'useTouch', from: '@gwenjs/input' },
       { name: 'useGyro', from: '@gwenjs/input' },
       { name: 'usePointer', from: '@gwenjs/input' },
+      { name: 'useInputRecorder', from: '@gwenjs/input' },
+      { name: 'useInputPlayback', from: '@gwenjs/input' },
       { name: 'defineInputSchema', from: '@gwenjs/input' },
       { name: 'defineInputContext', from: '@gwenjs/input' },
       { name: 'bind', from: '@gwenjs/input' },

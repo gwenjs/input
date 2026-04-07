@@ -1,5 +1,5 @@
-import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { GyroDevice } from '../devices/gyro.js'
+import { useEngine, GwenPluginNotFoundError } from "@gwenjs/core";
+import type { GyroDevice } from "../devices/gyro.js";
 
 /**
  * Returns the `GyroDevice` for reading orientation and rotation rate.
@@ -20,14 +20,14 @@ import type { GyroDevice } from '../devices/gyro.js'
  * ```
  */
 export function useGyro(): GyroDevice {
-  const engine = useEngine()
-  const input = engine.tryInject('input')
+  const engine = useEngine();
+  const input = engine.tryInject("input");
   if (!input) {
     throw new GwenPluginNotFoundError({
-      pluginName: '@gwenjs/input',
+      pluginName: "@gwenjs/input",
       hint: "Add '@gwenjs/input' to modules in gwen.config.ts",
-      docsUrl: 'https://gwenengine.dev/modules/input',
-    })
+      docsUrl: "https://gwenengine.dev/modules/input",
+    });
   }
-  return input.gyro
+  return input.gyro;
 }

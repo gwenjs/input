@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Default interaction — fires `isJustTriggered` on the first frame the button is pressed.
@@ -13,5 +13,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function Press(): InteractionDescriptor {
-  return { _type: 'press' }
+  return { _type: "press" };
 }

@@ -1,5 +1,5 @@
-import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { KeyboardDevice } from '../devices/keyboard.js'
+import { useEngine, GwenPluginNotFoundError } from "@gwenjs/core";
+import type { KeyboardDevice } from "../devices/keyboard.js";
 
 /**
  * Returns the raw `KeyboardDevice` instance.
@@ -18,14 +18,14 @@ import type { KeyboardDevice } from '../devices/keyboard.js'
  * ```
  */
 export function useKeyboard(): KeyboardDevice {
-  const engine = useEngine()
-  const input = engine.tryInject('input')
+  const engine = useEngine();
+  const input = engine.tryInject("input");
   if (!input) {
     throw new GwenPluginNotFoundError({
-      pluginName: '@gwenjs/input',
+      pluginName: "@gwenjs/input",
       hint: "Add '@gwenjs/input' to modules in gwen.config.ts",
-      docsUrl: 'https://gwenengine.dev/modules/input',
-    })
+      docsUrl: "https://gwenengine.dev/modules/input",
+    });
   }
-  return input.keyboard
+  return input.keyboard;
 }

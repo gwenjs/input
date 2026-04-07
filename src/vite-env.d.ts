@@ -4,11 +4,11 @@
  */
 interface ImportMetaEnv {
   /** True in production builds (`vite build`). */
-  readonly PROD: boolean
+  readonly PROD: boolean;
   /** True in development mode. */
-  readonly DEV: boolean
+  readonly DEV: boolean;
 }
 
 interface ImportMeta {
-  readonly env: ImportMetaEnv
+  readonly env: ImportMetaEnv;
 }

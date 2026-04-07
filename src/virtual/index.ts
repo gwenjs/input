@@ -1,1 +1,1 @@
-export { VirtualControlsOverlay } from './virtual-controls-overlay.js'
+export { VirtualControlsOverlay } from "./virtual-controls-overlay.js";

@@ -1,25 +1,31 @@
 // @ts-expect-error — workspace dep not yet installed; resolves in monorepo
-import { definePlugin } from '@gwenjs/kit/plugin'
-import type { GwenEngine } from '@gwenjs/core'
-import { normalizeConfig } from './config.js'
-import type { InputPluginConfig } from './config.js'
-import { InputService } from '../players/input-service.js'
-import { PlayerInput } from '../players/player-input.js'
-import type { DeviceAssignment, DeviceSet } from '../players/binding-resolver.js'
-import { InputContext } from '../contexts/input-context.js'
-import { KeyboardDevice } from '../devices/keyboard.js'
-import { MouseDevice } from '../devices/mouse.js'
-import { GamepadDevice } from '../devices/gamepad.js'
-import { TouchDevice } from '../devices/touch.js'
-import { GyroDevice } from '../devices/gyro.js'
-import { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
-import { InputRecorder } from '../recording/recorder.js'
-import { InputPlayback } from '../recording/playback.js'
-import type { InputRecording } from '../recording/types.js'
-import { InputDebugAPIImpl } from '../debug/debug-api.js'
-import { DevOverlay } from '../debug/dev-overlay.js'
+import { definePlugin } from "@gwenjs/kit/plugin";
+import type { GwenEngine } from "@gwenjs/core";
+import { normalizeConfig } from "./config.js";
+import type { InputPluginConfig } from "./config.js";
+import { InputService } from "../players/input-service.js";
+import { PlayerInput } from "../players/player-input.js";
+import type { DeviceAssignment, DeviceSet } from "../players/binding-resolver.js";
+import { InputContext } from "../contexts/input-context.js";
+import { KeyboardDevice } from "../devices/keyboard.js";
+import { MouseDevice } from "../devices/mouse.js";
+import { GamepadDevice } from "../devices/gamepad.js";
+import { TouchDevice } from "../devices/touch.js";
+import { GyroDevice } from "../devices/gyro.js";
+import { VirtualControlsOverlay } from "../virtual/virtual-controls-overlay.js";
+import { InputRecorder } from "../recording/recorder.js";
+import { InputPlayback } from "../recording/playback.js";
+import type { InputRecording } from "../recording/types.js";
+import { InputDebugAPIImpl } from "../debug/debug-api.js";
+import { DevOverlay } from "../debug/dev-overlay.js";
 
-export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig, NormalizedDevOverlayConfig } from './config.js'
+export type {
+  InputPluginConfig,
+  VirtualJoystickConfig,
+  VirtualButtonConfig,
+  DevOverlayConfig,
+  NormalizedDevOverlayConfig,
+} from "./config.js";
 
 /**
  * Runtime hooks added to `GwenRuntimeHooks` by `@gwenjs/input`.
@@ -38,31 +44,35 @@ export interface InputPluginHooks {
    * @param name - Context name.
    * @param priority - Context priority level.
    */
-  'input:contextActivated': (name: string, priority: number) => void
+  "input:contextActivated": (name: string, priority: number) => void;
   /**
    * Fired when a player deactivates an input context.
    * @param name - Context name.
    */
-  'input:contextDeactivated': (name: string) => void
+  "input:contextDeactivated": (name: string) => void;
   /**
    * Fired when a device connects or disconnects.
    * @param type - Device type.
    * @param event - 'connected' or 'disconnected'.
    * @param index - Gamepad slot index (0 for keyboard/touch/gyro).
    */
-  'input:deviceChanged': (type: 'gamepad' | 'touch' | 'gyro', event: 'connected' | 'disconnected', index: number) => void
+  "input:deviceChanged": (
+    type: "gamepad" | "touch" | "gyro",
+    event: "connected" | "disconnected",
+    index: number,
+  ) => void;
   /**
    * Fired when a player's binding for an action changes (via rebind/reset).
    * @param playerId - Player slot index.
    * @param action - Action name (ActionRef.name).
    * @param index - Binding index that changed.
    */
-  'input:bindingChanged': (playerId: number, action: string, index: number) => void
+  "input:bindingChanged": (playerId: number, action: string, index: number) => void;
   /**
    * Fired when the recording/playback state changes.
    * @param state - New recording state.
    */
-  'input:recordingState': (state: 'started' | 'stopped' | 'playing' | 'paused') => void
+  "input:recordingState": (state: "started" | "stopped" | "playing" | "paused") => void;
 }
 
 /**
@@ -89,88 +99,94 @@ export interface InputPluginHooks {
  * ```
  */
 export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
-  const cfg = normalizeConfig(opts)
-  let log: ReturnType<GwenEngine['logger']['child']>
+  const cfg = normalizeConfig(opts);
+  let log: ReturnType<GwenEngine["logger"]["child"]>;
 
-  let keyboard: KeyboardDevice | undefined
-  let mouse: MouseDevice | undefined
-  let gamepad: GamepadDevice | undefined
-  let touch: TouchDevice | undefined
-  let gyro: GyroDevice | undefined
-  let virtualControls: VirtualControlsOverlay | undefined
+  let keyboard: KeyboardDevice | undefined;
+  let mouse: MouseDevice | undefined;
+  let gamepad: GamepadDevice | undefined;
+  let touch: TouchDevice | undefined;
+  let gyro: GyroDevice | undefined;
+  let virtualControls: VirtualControlsOverlay | undefined;
 
   /** All player instances created during setup. */
-  let players: PlayerInput[] = []
+  let players: PlayerInput[] = [];
 
-  let recorder: InputRecorder | undefined
-  let playback: InputPlayback | undefined
+  let recorder: InputRecorder | undefined;
+  let playback: InputPlayback | undefined;
   /** Absolute frame counter, incremented each frame during recording. */
-  let recordingFrameIndex = 0
+  let recordingFrameIndex = 0;
 
-  let debugAPI: InputDebugAPIImpl | null = null
-  let debugOverlay: DevOverlay | null = null
+  let debugAPI: InputDebugAPIImpl | null = null;
+  let debugOverlay: DevOverlay | null = null;
 
   return {
-    name: '@gwenjs/input',
+    name: "@gwenjs/input",
     provides: { input: {} as InputService },
     providesHooks: {} as InputPluginHooks,
 
     setup(engine: GwenEngine) {
-      log = engine.logger.child('@gwenjs/input')
+      log = engine.logger.child("@gwenjs/input");
 
-      keyboard = new KeyboardDevice()
-      mouse = new MouseDevice()
-      gamepad = new GamepadDevice()
-      touch = new TouchDevice()
-      gyro = new GyroDevice(cfg.gyro.smoothing, cfg.gyro.deadZone)
+      keyboard = new KeyboardDevice();
+      mouse = new MouseDevice();
+      gamepad = new GamepadDevice();
+      touch = new TouchDevice();
+      gyro = new GyroDevice(cfg.gyro.smoothing, cfg.gyro.deadZone);
 
-      if (typeof window !== 'undefined') {
-        keyboard.attach(cfg.eventTarget)
-        mouse.attach(cfg.eventTarget, cfg.canvas ?? undefined)
-        gamepad.attach(window)
-        touch.attach(cfg.eventTarget, cfg.canvas ?? undefined)
-        gyro.attach(window)
+      if (typeof window !== "undefined") {
+        keyboard.attach(cfg.eventTarget);
+        mouse.attach(cfg.eventTarget, cfg.canvas ?? undefined);
+        gamepad.attach(window);
+        touch.attach(cfg.eventTarget, cfg.canvas ?? undefined);
+        gyro.attach(window);
 
         gamepad.onConnect = (padIndex) => {
-          engine.hooks.callHook('input:deviceChanged', 'gamepad', 'connected', padIndex)
-        }
+          engine.hooks.callHook("input:deviceChanged", "gamepad", "connected", padIndex);
+        };
         gamepad.onDisconnect = (padIndex) => {
-          engine.hooks.callHook('input:deviceChanged', 'gamepad', 'disconnected', padIndex)
-        }
+          engine.hooks.callHook("input:deviceChanged", "gamepad", "disconnected", padIndex);
+        };
 
         // ── Virtual controls overlay ───────────────────────────────────────
-        if (cfg.touch.enabled && (cfg.touch.virtualJoysticks.length > 0 || cfg.touch.virtualButtons.length > 0)) {
-          virtualControls = new VirtualControlsOverlay(cfg.touch.forceVirtualControls)
+        if (
+          cfg.touch.enabled &&
+          (cfg.touch.virtualJoysticks.length > 0 || cfg.touch.virtualButtons.length > 0)
+        ) {
+          virtualControls = new VirtualControlsOverlay(cfg.touch.forceVirtualControls);
           for (const jsCfg of cfg.touch.virtualJoysticks) {
-            virtualControls.addJoystick(jsCfg)
+            virtualControls.addJoystick(jsCfg);
           }
           for (const btnCfg of cfg.touch.virtualButtons) {
-            virtualControls.addButton(btnCfg)
+            virtualControls.addButton(btnCfg);
           }
-          virtualControls.attach()
+          virtualControls.attach();
         }
       }
 
       // ── Create PlayerInput instances ─────────────────────────────────────
-      players = []
+      players = [];
       for (let i = 0; i < cfg.players; i++) {
-        const ctx = new InputContext()
+        const ctx = new InputContext();
 
         // Register all configured contexts
         for (const def of cfg.contexts) {
-          ctx.register(def)
+          ctx.register(def);
         }
 
         // Activate default contexts (all registered if no explicit list provided)
-        const toActivate = cfg.defaultActiveContexts ?? cfg.contexts.map(c => c.name)
+        const toActivate = cfg.defaultActiveContexts ?? cfg.contexts.map((c) => c.name);
         for (const name of toActivate) {
-          try { ctx.activate(name) } catch { /* ignore unregistered names */ }
+          try {
+            ctx.activate(name);
+          } catch {
+            /* ignore unregistered names */
+          }
         }
 
         // Player 0 → keyboard+mouse; subsequent players → gamepads in order
-        const assignment: DeviceAssignment = i === 0
-          ? { type: 'keyboard+mouse', slot: 0 }
-          : { type: 'gamepad', slot: i - 1 }
+        const assignment: DeviceAssignment =
+          i === 0 ? { type: "keyboard+mouse", slot: 0 } : { type: "gamepad", slot: i - 1 };
 
         const deviceSet: DeviceSet = {
           keyboard: keyboard!,
@@ -179,30 +195,30 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
           touch: touch!,
           gyro: gyro!,
           virtualControls,
-        }
+        };
 
         const bindingsChangedCb = cfg.onBindingsChanged
-          ? (snapshot: import('../players/bindings-snapshot.js').BindingsSnapshot) =>
+          ? (snapshot: import("../players/bindings-snapshot.js").BindingsSnapshot) =>
               cfg.onBindingsChanged!(i, snapshot)
-          : undefined
+          : undefined;
 
-        const player = new PlayerInput(i, ctx, deviceSet, assignment, bindingsChangedCb)
+        const player = new PlayerInput(i, ctx, deviceSet, assignment, bindingsChangedCb);
 
         // Restore persisted bindings if provided
         if (cfg.initialBindings[i]) {
-          player.importBindings(cfg.initialBindings[i]!)
+          player.importBindings(cfg.initialBindings[i]!);
         }
 
-        players.push(player)
+        players.push(player);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(engine as any).provide(`player:${i}`, player)
+        (engine as any).provide(`player:${i}`, player);
       }
 
-      const recorder_ = new InputRecorder(players)
-      const playback_ = new InputPlayback(players)
-      recorder = recorder_
-      playback = playback_
-      recordingFrameIndex = 0
+      const recorder_ = new InputRecorder(players);
+      const playback_ = new InputPlayback(players);
+      recorder = recorder_;
+      playback = playback_;
+      recordingFrameIndex = 0;
 
       const inputService = new InputService(
         players,
@@ -216,14 +232,14 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         },
         recorder_,
         playback_,
-      )
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(engine as any).provide('input', inputService)
+      (engine as any).provide("input", inputService);
 
       // Auto-play a recording supplied in config.
       if (cfg.recording) {
-        playback_.load(cfg.recording as InputRecording)
-        playback_.play()
+        playback_.load(cfg.recording as InputRecording);
+        playback_.play();
       }
 
       // ── Debug API ────────────────────────────────────────────────────────
@@ -239,58 +255,58 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
             virtualControls,
           },
           inputService,
-        )
-        inputService._debug = debugAPI
+        );
+        inputService._debug = debugAPI;
 
-        if (cfg.devOverlay && typeof window !== 'undefined') {
-          debugOverlay = new DevOverlay(debugAPI, cfg.devOverlay)
-          debugOverlay.attach()
+        if (cfg.devOverlay && typeof window !== "undefined") {
+          debugOverlay = new DevOverlay(debugAPI, cfg.devOverlay);
+          debugOverlay.attach();
         }
       }
 
-      log.info('initialized', { players: cfg.players })
+      log.info("initialized", { players: cfg.players });
     },
 
     onBeforeUpdate(dt: number) {
-      if (typeof window === 'undefined') return
+      if (typeof window === "undefined") return;
       // Advance playback before players update so _playbackStates is current.
-      playback?._tick(dt)
-      keyboard?.update()
-      mouse?.update()
-      gamepad?.update()
-      touch?.update()
-      gyro?.update()
-      for (const player of players) player._updateFrame(dt)
+      playback?._tick(dt);
+      keyboard?.update();
+      mouse?.update();
+      gamepad?.update();
+      touch?.update();
+      gyro?.update();
+      for (const player of players) player._updateFrame(dt);
     },
 
     onAfterUpdate() {
       // Capture recording frame after all players have updated.
-      const frameIdx = recordingFrameIndex++
-      recorder?._captureFrame(frameIdx)
-      debugAPI?._tick(frameIdx)
+      const frameIdx = recordingFrameIndex++;
+      recorder?._captureFrame(frameIdx);
+      debugAPI?._tick(frameIdx);
     },
 
     teardown() {
-      if (typeof window !== 'undefined') {
-        keyboard?.detach(cfg.eventTarget)
-        mouse?.detach(cfg.eventTarget)
-        gamepad?.detach(window)
-        touch?.detach(cfg.eventTarget)
-        gyro?.detach(window)
-        virtualControls?.detach()
+      if (typeof window !== "undefined") {
+        keyboard?.detach(cfg.eventTarget);
+        mouse?.detach(cfg.eventTarget);
+        gamepad?.detach(window);
+        touch?.detach(cfg.eventTarget);
+        gyro?.detach(window);
+        virtualControls?.detach();
       }
-      debugOverlay?.detach()
-      log?.info('torn down')
+      debugOverlay?.detach();
+      log?.info("torn down");
     },
 
     onError(error: unknown, context: { phase: string; recover: () => void }) {
       // Input errors must NEVER crash the game.
       // A missing gamepad or failed gesture should not propagate to the engine crash handler.
-      log.warn('input error — recovering', {
+      log.warn("input error — recovering", {
         phase: context.phase,
         error: String(error),
-      })
-      context.recover()
+      });
+      context.recover();
     },
-  }
-})
+  };
+});

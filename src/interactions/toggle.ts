@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Toggles `isPressed` on each press. First press → on, second press → off.
@@ -12,5 +12,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function Toggle(): InteractionDescriptor {
-  return { _type: 'toggle' }
+  return { _type: "toggle" };
 }

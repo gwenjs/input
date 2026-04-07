@@ -3,15 +3,15 @@
  * Activated as a side-effect when importing from '@gwenjs/input'.
  */
 
-import type { InputPluginHooks } from './plugin/index.js'
-import type { InputService } from './players/input-service.js'
+import type { InputPluginHooks } from "./plugin/index.js";
+import type { InputService } from "./players/input-service.js";
 
-declare module '@gwenjs/core' {
+declare module "@gwenjs/core" {
   interface GwenRuntimeHooks extends InputPluginHooks {}
 
   interface GwenProvides {
-    input: InputService
+    input: InputService;
   }
 }
 
-export {}
+export {};

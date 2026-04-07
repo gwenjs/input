@@ -5,16 +5,16 @@
  */
 export interface BindingsSnapshot {
   /** Schema version — always 1 in this release. */
-  version: 1
+  version: 1;
   /** Player slot index (0-based). */
-  player: number
+  player: number;
   /** Array of binding overrides applied on top of context defaults. */
   overrides: Array<{
     /** `ActionRef.name` of the action being overridden. */
-    actionId: string
+    actionId: string;
     /** Index into the action's binding array. */
-    bindingIndex: number
+    bindingIndex: number;
     /** The new binding source replacing the default. */
-    newBinding: import('../contexts/binding.js').BindingSource
-  }>
+    newBinding: import("../contexts/binding.js").BindingSource;
+  }>;
 }

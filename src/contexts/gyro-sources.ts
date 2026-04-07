@@ -1,4 +1,4 @@
-import type { GestureSource } from './binding.js'
+import type { GestureSource } from "./binding.js";
 
 /**
  * Motion gesture binding sources for gyroscope/accelerometer input.
@@ -19,7 +19,7 @@ export const MotionGesture = {
    * ```
    */
   Shake(options: { threshold?: number } = {}): GestureSource {
-    return { _type: 'motion:shake', threshold: options.threshold ?? 15 }
+    return { _type: "motion:shake", threshold: options.threshold ?? 15 };
   },
 
   /**
@@ -34,7 +34,7 @@ export const MotionGesture = {
    * bind(LeanLeft, MotionGesture.Tilt({ axis: 'roll', degrees: 30 }))
    * ```
    */
-  Tilt(options: { axis: 'roll' | 'pitch'; degrees: number }): GestureSource {
-    return { _type: 'motion:tilt', axis: options.axis, degrees: options.degrees }
+  Tilt(options: { axis: "roll" | "pitch"; degrees: number }): GestureSource {
+    return { _type: "motion:tilt", axis: options.axis, degrees: options.degrees };
   },
-} as const
+} as const;

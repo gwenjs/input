@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Fires `isJustTriggered` when two taps occur within `maxGap` seconds of each other.
@@ -12,5 +12,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function DoubleTap(opts?: { maxGap?: number }): InteractionDescriptor {
-  return { _type: 'doubletap', maxGap: opts?.maxGap ?? 0.3 }
+  return { _type: "doubletap", maxGap: opts?.maxGap ?? 0.3 };
 }

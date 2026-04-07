@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Lerps the current value toward the target per frame.
@@ -20,7 +20,7 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function Smooth(factor: number = 0.1): ProcessorDescriptor {
   return {
-    _type: 'smooth',
+    _type: "smooth",
     factor,
-  }
+  };
 }

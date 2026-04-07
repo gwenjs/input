@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Fires `isJustTriggered` on the frame the button is released (not on press).
@@ -11,5 +11,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function Release(): InteractionDescriptor {
-  return { _type: 'release' }
+  return { _type: "release" };
 }

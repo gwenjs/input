@@ -1,5 +1,5 @@
-import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { GamepadDevice } from '../devices/gamepad.js'
+import { useEngine, GwenPluginNotFoundError } from "@gwenjs/core";
+import type { GamepadDevice } from "../devices/gamepad.js";
 
 /**
  * Returns the raw `GamepadDevice` instance.
@@ -19,14 +19,14 @@ import type { GamepadDevice } from '../devices/gamepad.js'
  * ```
  */
 export function useGamepad(slot = 0): GamepadDevice {
-  const engine = useEngine()
-  const input = engine.tryInject('input')
+  const engine = useEngine();
+  const input = engine.tryInject("input");
   if (!input) {
     throw new GwenPluginNotFoundError({
-      pluginName: '@gwenjs/input',
+      pluginName: "@gwenjs/input",
       hint: "Add '@gwenjs/input' to modules in gwen.config.ts",
-      docsUrl: 'https://gwenengine.dev/modules/input',
-    })
+      docsUrl: "https://gwenengine.dev/modules/input",
+    });
   }
-  return input.gamepad
+  return input.gamepad;
 }

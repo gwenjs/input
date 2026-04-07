@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Multiplies the value by factor.
@@ -17,7 +17,7 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function Scale(factor: number): ProcessorDescriptor {
   return {
-    _type: 'scale',
+    _type: "scale",
     factor,
-  }
+  };
 }

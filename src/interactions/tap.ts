@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Fires `isJustTriggered` on release, only if the total hold time was ≤ `maxDuration`.
@@ -13,5 +13,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function Tap(opts?: { maxDuration?: number }): InteractionDescriptor {
-  return { _type: 'tap', maxDuration: opts?.maxDuration ?? 0.3 }
+  return { _type: "tap", maxDuration: opts?.maxDuration ?? 0.3 };
 }

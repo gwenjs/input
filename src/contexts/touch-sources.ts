@@ -1,4 +1,4 @@
-import type { GestureSource, VirtualSource } from './binding.js'
+import type { GestureSource, VirtualSource } from "./binding.js";
 
 /**
  * Touch gesture binding sources.
@@ -24,7 +24,11 @@ export const TouchGesture = {
    * ```
    */
   Tap(options: { fingers?: number; maxDuration?: number } = {}): GestureSource {
-    return { _type: 'gesture:tap', fingers: options.fingers ?? 1, maxDuration: options.maxDuration ?? 0.3 }
+    return {
+      _type: "gesture:tap",
+      fingers: options.fingers ?? 1,
+      maxDuration: options.maxDuration ?? 0.3,
+    };
   },
 
   /**
@@ -41,8 +45,15 @@ export const TouchGesture = {
    * bind(Roll, TouchGesture.Swipe({ direction: 'right' }))
    * ```
    */
-  Swipe(options: { direction: 'up' | 'down' | 'left' | 'right'; minDistance?: number }): GestureSource {
-    return { _type: 'gesture:swipe', direction: options.direction, minDistance: options.minDistance ?? 50 }
+  Swipe(options: {
+    direction: "up" | "down" | "left" | "right";
+    minDistance?: number;
+  }): GestureSource {
+    return {
+      _type: "gesture:swipe",
+      direction: options.direction,
+      minDistance: options.minDistance ?? 50,
+    };
   },
 
   /**
@@ -56,7 +67,7 @@ export const TouchGesture = {
    * ```
    */
   Pinch(): GestureSource {
-    return { _type: 'gesture:pinch' }
+    return { _type: "gesture:pinch" };
   },
 
   /**
@@ -70,9 +81,9 @@ export const TouchGesture = {
    * ```
    */
   Rotate(): GestureSource {
-    return { _type: 'gesture:rotate' }
+    return { _type: "gesture:rotate" };
   },
-} as const
+} as const;
 
 /**
  * Creates a virtual on-screen joystick source → `axis2d`.
@@ -93,7 +104,7 @@ export const TouchGesture = {
  * ```
  */
 export function VirtualJoystick(id: string): VirtualSource {
-  return { _type: 'virtual:joystick', id }
+  return { _type: "virtual:joystick", id };
 }
 
 /**
@@ -110,5 +121,5 @@ export function VirtualJoystick(id: string): VirtualSource {
  * ```
  */
 export function VirtualButton(id: string): VirtualSource {
-  return { _type: 'virtual:button', id }
+  return { _type: "virtual:button", id };
 }

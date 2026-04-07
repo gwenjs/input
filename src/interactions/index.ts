@@ -1,11 +1,11 @@
-export { Press } from './press.js'
-export { Release } from './release.js'
-export { Tap } from './tap.js'
-export { Hold } from './hold.js'
-export { DoubleTap } from './double-tap.js'
-export { AllOf } from './all-of.js'
-export { ChordedWith } from './chorded-with.js'
-export { Toggle } from './toggle.js'
-export { Repeat } from './repeat.js'
-export { InteractionPipeline } from './pipeline.js'
-export type { InteractionResult } from './pipeline.js'
+export { Press } from "./press.js";
+export { Release } from "./release.js";
+export { Tap } from "./tap.js";
+export { Hold } from "./hold.js";
+export { DoubleTap } from "./double-tap.js";
+export { AllOf } from "./all-of.js";
+export { ChordedWith } from "./chorded-with.js";
+export { Toggle } from "./toggle.js";
+export { Repeat } from "./repeat.js";
+export { InteractionPipeline } from "./pipeline.js";
+export type { InteractionResult } from "./pipeline.js";

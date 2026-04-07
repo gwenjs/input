@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Applies a deadzone to axis values.
@@ -16,7 +16,7 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function DeadZone(threshold: number): ProcessorDescriptor {
   return {
-    _type: 'deadzone',
+    _type: "deadzone",
     threshold,
-  }
+  };
 }

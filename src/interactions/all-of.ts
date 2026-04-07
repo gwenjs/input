@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Fires only when ALL specified keys are simultaneously held.
@@ -17,5 +17,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function AllOf(...keys: string[]): InteractionDescriptor {
-  return { _type: 'allof', keys }
+  return { _type: "allof", keys };
 }

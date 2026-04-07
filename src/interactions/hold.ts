@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Fires `isJustTriggered` once the button has been held for `holdTime` seconds.
@@ -13,5 +13,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function Hold(opts: { holdTime: number }): InteractionDescriptor {
-  return { _type: 'hold', holdTime: opts.holdTime }
+  return { _type: "hold", holdTime: opts.holdTime };
 }

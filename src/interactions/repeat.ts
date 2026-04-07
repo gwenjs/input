@@ -1,4 +1,4 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
 
 /**
  * Fires `isJustTriggered` repeatedly while held, like a keyboard auto-repeat.
@@ -17,5 +17,5 @@ import type { InteractionDescriptor } from '../contexts/binding.js'
  * ```
  */
 export function Repeat(opts: { interval: number; delay?: number }): InteractionDescriptor {
-  return { _type: 'repeat', interval: opts.interval, delay: opts.delay ?? opts.interval }
+  return { _type: "repeat", interval: opts.interval, delay: opts.delay ?? opts.interval };
 }

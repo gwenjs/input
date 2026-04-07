@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Clamps value to [min, max].
@@ -17,8 +17,8 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function Clamp(min: number, max: number): ProcessorDescriptor {
   return {
-    _type: 'clamp',
+    _type: "clamp",
     min,
     max,
-  }
+  };
 }

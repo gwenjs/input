@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Swaps x and y components of a 2D axis value.
@@ -14,6 +14,6 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function SwizzleXY(): ProcessorDescriptor {
   return {
-    _type: 'swizzlexy',
-  }
+    _type: "swizzlexy",
+  };
 }

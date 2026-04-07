@@ -1,2 +1,2 @@
-export * from './keys.js'
-export * from './gamepad.js'
+export * from "./keys.js";
+export * from "./gamepad.js";

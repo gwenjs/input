@@ -1,8 +1,8 @@
-export { DeadZone } from './deadzone.js'
-export { Scale } from './scale.js'
-export { Invert, InvertX, InvertY } from './invert.js'
-export { Clamp } from './clamp.js'
-export { Normalize } from './normalize.js'
-export { Smooth } from './smooth.js'
-export { SwizzleXY } from './swizzle.js'
-export { ProcessorPipeline } from './pipeline.js'
+export { DeadZone } from "./deadzone.js";
+export { Scale } from "./scale.js";
+export { Invert, InvertX, InvertY } from "./invert.js";
+export { Clamp } from "./clamp.js";
+export { Normalize } from "./normalize.js";
+export { Smooth } from "./smooth.js";
+export { SwizzleXY } from "./swizzle.js";
+export { ProcessorPipeline } from "./pipeline.js";

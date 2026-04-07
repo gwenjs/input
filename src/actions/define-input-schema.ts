@@ -1,17 +1,12 @@
-import type {
-  ActionType,
-  ActionRef,
-  ActionSchemaMap,
-  RefsFromSchema,
-} from '../types.js'
-import { defineAction } from './define-action.js'
+import type { ActionType, ActionRef, ActionSchemaMap, RefsFromSchema } from "../types.js";
+import { defineAction } from "./define-action.js";
 
 // Minimal forward declaration to avoid circular import
 // Full implementation is in src/contexts/define-input-context.ts
 export interface InputContextDef {
-  name: string
-  priority: number
-  bindings: unknown[]
+  name: string;
+  priority: number;
+  bindings: unknown[];
 }
 
 /** The return type of `defineInputSchema`. */
@@ -20,12 +15,12 @@ export interface InputSchemaResult<S extends ActionSchemaMap> {
    * Typed action references — one per key in the schema, with the correct
    * `ActionRef<T>` literal type preserved.
    */
-  actions: RefsFromSchema<S>
+  actions: RefsFromSchema<S>;
   /**
    * The input context definition, ready to pass to `InputPlugin({ contexts: [...] })`
    * or to register via `player.registerContext()`.
    */
-  context: InputContextDef
+  context: InputContextDef;
 }
 
 /**
@@ -81,19 +76,19 @@ export interface InputSchemaResult<S extends ActionSchemaMap> {
 export function defineInputSchema<const S extends ActionSchemaMap>(
   name: string,
   config: {
-    priority: number
-    actions: S
+    priority: number;
+    actions: S;
   },
 ): InputSchemaResult<S> {
-  const actions = {} as RefsFromSchema<S>
-  const bindings: unknown[] = []
+  const actions = {} as RefsFromSchema<S>;
+  const bindings: unknown[] = [];
 
   for (const [key, entry] of Object.entries(config.actions)) {
-    const ref = defineAction(key, { type: entry.type as ActionType })
-    ;(actions as Record<string, ActionRef<ActionType>>)[key] = ref
+    const ref = defineAction(key, { type: entry.type as ActionType });
+    (actions as Record<string, ActionRef<ActionType>>)[key] = ref;
 
     for (const binding of entry.bindings) {
-      bindings.push({ action: ref, binding })
+      bindings.push({ action: ref, binding });
     }
   }
 
@@ -101,7 +96,7 @@ export function defineInputSchema<const S extends ActionSchemaMap>(
     name,
     priority: config.priority,
     bindings,
-  }
+  };
 
-  return { actions, context }
+  return { actions, context };
 }

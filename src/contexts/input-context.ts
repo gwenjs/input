@@ -1,6 +1,6 @@
-import type { InputContextDef } from './define-input-context.js'
-import type { BindingEntry } from './binding.js'
-import type { ActionRef, ActionType } from '../types.js'
+import type { InputContextDef } from "./define-input-context.js";
+import type { BindingEntry } from "./binding.js";
+import type { ActionRef, ActionType } from "../types.js";
 
 /**
  * Runtime context manager for a single player.
@@ -12,8 +12,8 @@ import type { ActionRef, ActionType } from '../types.js'
  * bindings apply for a given action.
  */
 export class InputContext {
-  private readonly registered = new Map<string, InputContextDef>()
-  private readonly active: InputContextDef[] = []
+  private readonly registered = new Map<string, InputContextDef>();
+  private readonly active: InputContextDef[] = [];
 
   /**
    * Registers a context definition. Must be called before `activate()`.
@@ -21,7 +21,7 @@ export class InputContext {
    */
   register(def: InputContextDef): void {
     if (!this.registered.has(def.name)) {
-      this.registered.set(def.name, def)
+      this.registered.set(def.name, def);
     }
   }
 
@@ -32,21 +32,21 @@ export class InputContext {
    * @throws {Error} If the context name was never registered.
    */
   activate(name: string): void {
-    const def = this.registered.get(name)
+    const def = this.registered.get(name);
     if (!def) {
       throw new Error(
         `[@gwenjs/input] Cannot activate unregistered context "${name}". ` +
-        `Call registerContext() or pass contexts to InputPlugin({ contexts: [...] }) first.`
-      )
+          `Call registerContext() or pass contexts to InputPlugin({ contexts: [...] }) first.`,
+      );
     }
     // Remove if already active (will re-insert at correct priority position)
-    this.deactivate(name)
+    this.deactivate(name);
     // Insert sorted by priority descending, preserving insertion order for ties
-    const insertIdx = this.active.findIndex(c => c.priority < def.priority)
+    const insertIdx = this.active.findIndex((c) => c.priority < def.priority);
     if (insertIdx === -1) {
-      this.active.push(def)
+      this.active.push(def);
     } else {
-      this.active.splice(insertIdx, 0, def)
+      this.active.splice(insertIdx, 0, def);
     }
   }
 
@@ -54,15 +54,15 @@ export class InputContext {
    * Deactivates a context by name. No-op if not currently active.
    */
   deactivate(name: string): void {
-    const idx = this.active.findIndex(c => c.name === name)
-    if (idx !== -1) this.active.splice(idx, 1)
+    const idx = this.active.findIndex((c) => c.name === name);
+    if (idx !== -1) this.active.splice(idx, 1);
   }
 
   /**
    * Returns the names of all currently active contexts, in priority order (highest first).
    */
   get activeContextNames(): readonly string[] {
-    return this.active.map(c => c.name)
+    return this.active.map((c) => c.name);
   }
 
   /**
@@ -72,21 +72,21 @@ export class InputContext {
    * them in order and uses the first matching source that produces a non-zero value.
    */
   getBindingsForAction<T extends ActionType>(ref: ActionRef<T>): BindingEntry[] {
-    const result: BindingEntry[] = []
+    const result: BindingEntry[] = [];
     for (const ctx of this.active) {
       for (const entry of ctx.bindings) {
         if (entry.action.id === ref.id) {
-          result.push(entry)
+          result.push(entry);
         }
       }
     }
-    return result
+    return result;
   }
 
   /**
    * Returns all registered context definitions (active or not).
    */
   getAllRegistered(): InputContextDef[] {
-    return [...this.registered.values()]
+    return [...this.registered.values()];
   }
 }

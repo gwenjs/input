@@ -1,5 +1,5 @@
-import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { MouseDevice } from '../devices/mouse.js'
+import { useEngine, GwenPluginNotFoundError } from "@gwenjs/core";
+import type { MouseDevice } from "../devices/mouse.js";
 
 /**
  * Returns the raw `MouseDevice` instance.
@@ -18,14 +18,14 @@ import type { MouseDevice } from '../devices/mouse.js'
  * ```
  */
 export function useMouse(): MouseDevice {
-  const engine = useEngine()
-  const input = engine.tryInject('input')
+  const engine = useEngine();
+  const input = engine.tryInject("input");
   if (!input) {
     throw new GwenPluginNotFoundError({
-      pluginName: '@gwenjs/input',
+      pluginName: "@gwenjs/input",
       hint: "Add '@gwenjs/input' to modules in gwen.config.ts",
-      docsUrl: 'https://gwenengine.dev/modules/input',
-    })
+      docsUrl: "https://gwenengine.dev/modules/input",
+    });
   }
-  return input.mouse
+  return input.mouse;
 }

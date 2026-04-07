@@ -1,4 +1,4 @@
-import type { CompositeSource, Composite1DSource } from './binding.js'
+import type { CompositeSource, Composite1DSource } from "./binding.js";
 
 /**
  * Creates a 4-key composite source that emits an `axis2d` value.
@@ -17,12 +17,12 @@ import type { CompositeSource, Composite1DSource } from './binding.js'
  * ```
  */
 export function Composite2D(keys: {
-  up: string
-  down: string
-  left: string
-  right: string
+  up: string;
+  down: string;
+  left: string;
+  right: string;
 }): CompositeSource {
-  return { _type: 'composite2d', ...keys }
+  return { _type: "composite2d", ...keys };
 }
 
 /**
@@ -40,5 +40,5 @@ export function Composite2D(keys: {
  * ```
  */
 export function Composite(keys: { negative: string; positive: string }): Composite1DSource {
-  return { _type: 'composite1d', ...keys }
+  return { _type: "composite1d", ...keys };
 }

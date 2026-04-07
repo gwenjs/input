@@ -1,4 +1,4 @@
-import type { ActionType, ActionRef } from '../types.js'
+import type { ActionType, ActionRef } from "../types.js";
 
 /**
  * Creates a typed action reference with a stable identity.
@@ -32,5 +32,5 @@ export function defineAction<T extends ActionType>(
     id: Symbol(name),
     name,
     type: config.type,
-  }
+  };
 }

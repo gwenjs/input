@@ -4,6 +4,12 @@ node_modules/
 # Build output
 dist/
 
+# Coverage
+coverage/
+
+# Lock file (local workspace, managed by root)
+package-lock.json
+
 # Verdaccio local registry (non commité — résolution locale uniquement)
 .npmrc
 

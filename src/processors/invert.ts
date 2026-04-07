@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Multiplies axis value(s) by -1.
@@ -15,8 +15,8 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function Invert(): ProcessorDescriptor {
   return {
-    _type: 'invert',
-  }
+    _type: "invert",
+  };
 }
 
 /**
@@ -32,8 +32,8 @@ export function Invert(): ProcessorDescriptor {
  */
 export function InvertX(): ProcessorDescriptor {
   return {
-    _type: 'invertx',
-  }
+    _type: "invertx",
+  };
 }
 
 /**
@@ -49,6 +49,6 @@ export function InvertX(): ProcessorDescriptor {
  */
 export function InvertY(): ProcessorDescriptor {
   return {
-    _type: 'inverty',
-  }
+    _type: "inverty",
+  };
 }

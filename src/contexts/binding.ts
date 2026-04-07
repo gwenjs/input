@@ -1,4 +1,4 @@
-import type { ActionRef, ActionType } from '../types.js'
+import type { ActionRef, ActionType } from "../types.js";
 
 // ─── Processor / Interaction markers ─────────────────────────────────────────
 
@@ -7,8 +7,8 @@ import type { ActionRef, ActionType } from '../types.js'
  * The runtime plugin reads the `_type` tag and dispatches to the correct processor.
  */
 export interface ProcessorDescriptor {
-  readonly _type: string
-  readonly [key: string]: unknown
+  readonly _type: string;
+  readonly [key: string]: unknown;
 }
 
 /**
@@ -16,8 +16,8 @@ export interface ProcessorDescriptor {
  * The runtime plugin reads the `_type` tag and dispatches to the correct interaction.
  */
 export interface InteractionDescriptor {
-  readonly _type: string
-  readonly [key: string]: unknown
+  readonly _type: string;
+  readonly [key: string]: unknown;
 }
 
 // ─── Binding source ───────────────────────────────────────────────────────────
@@ -31,49 +31,57 @@ export interface InteractionDescriptor {
  * `GamepadButtons`, `GamepadStick`, `GyroAxis`, etc. Composite and gesture
  * sources are objects created by factory functions.
  */
-export type BindingSource = string | number | CompositeSource | GestureSource | VirtualSource | GyroSource | MouseDeltaSource | MouseWheelSource
+export type BindingSource =
+  | string
+  | number
+  | CompositeSource
+  | GestureSource
+  | VirtualSource
+  | GyroSource
+  | MouseDeltaSource
+  | MouseWheelSource;
 
 /** A composite 2D source (4 keys → axis2d). Created by `Composite2D()`. */
 export interface CompositeSource {
-  readonly _type: 'composite2d'
-  readonly up: string
-  readonly down: string
-  readonly left: string
-  readonly right: string
+  readonly _type: "composite2d";
+  readonly up: string;
+  readonly down: string;
+  readonly left: string;
+  readonly right: string;
 }
 
 /** A composite 1D source (2 keys → axis1d). Created by `Composite()`. */
 export interface Composite1DSource {
-  readonly _type: 'composite1d'
-  readonly negative: string
-  readonly positive: string
+  readonly _type: "composite1d";
+  readonly negative: string;
+  readonly positive: string;
 }
 
 /** Mouse movement delta → axis2d source. Created by `MouseDelta()`. */
 export interface MouseDeltaSource {
-  readonly _type: 'mouse:delta'
+  readonly _type: "mouse:delta";
 }
 
 /** Mouse wheel → axis1d source. Created by `MouseWheel()`. */
 export interface MouseWheelSource {
-  readonly _type: 'mouse:wheel'
+  readonly _type: "mouse:wheel";
 }
 
 /** Touch gesture source (Tap, Swipe, Pinch, Rotate). Created by `TouchGesture.*`. */
 export interface GestureSource {
-  readonly _type: string  // 'gesture:tap' | 'gesture:swipe' | 'gesture:pinch' | 'gesture:rotate'
-  readonly [key: string]: unknown
+  readonly _type: string; // 'gesture:tap' | 'gesture:swipe' | 'gesture:pinch' | 'gesture:rotate'
+  readonly [key: string]: unknown;
 }
 
 /** Virtual control source (on-screen joystick or button). */
 export interface VirtualSource {
-  readonly _type: 'virtual:joystick' | 'virtual:button'
-  readonly id: string
+  readonly _type: "virtual:joystick" | "virtual:button";
+  readonly id: string;
 }
 
 /** Gyroscope axis source. Created by referencing `GyroAxis.*` or `MotionGesture.*`. */
 export interface GyroSource {
-  readonly _type: string  // 'gyro:roll' | 'gyro:pitch' | etc.
+  readonly _type: string; // 'gyro:roll' | 'gyro:pitch' | etc.
 }
 
 // ─── Binding entry ────────────────────────────────────────────────────────────
@@ -84,19 +92,19 @@ export interface GyroSource {
  */
 export interface BindingEntry {
   /** The action this binding is for. */
-  readonly action: ActionRef<ActionType>
+  readonly action: ActionRef<ActionType>;
   /** The raw input source (key, button, stick, gesture, etc.). */
-  readonly source: BindingSource
+  readonly source: BindingSource;
   /** Processors applied in order to the raw value before it reaches ActionState. */
-  readonly processors: ProcessorDescriptor[]
+  readonly processors: ProcessorDescriptor[];
   /** Interactions that control when isJustTriggered / isJustReleased fire. */
-  readonly interactions: InteractionDescriptor[]
+  readonly interactions: InteractionDescriptor[];
 }
 
 /** Options for a binding entry (processors and interactions). */
 export interface BindingOptions {
-  processors?: ProcessorDescriptor[]
-  interactions?: InteractionDescriptor[]
+  processors?: ProcessorDescriptor[];
+  interactions?: InteractionDescriptor[];
 }
 
 // ─── bind() ──────────────────────────────────────────────────────────────────
@@ -136,5 +144,5 @@ export function bind<T extends ActionType>(
     source,
     processors: options.processors ?? [],
     interactions: options.interactions ?? [],
-  }
+  };
 }

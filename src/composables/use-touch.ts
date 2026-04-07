@@ -1,5 +1,5 @@
-import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { TouchDevice } from '../devices/touch.js'
+import { useEngine, GwenPluginNotFoundError } from "@gwenjs/core";
+import type { TouchDevice } from "../devices/touch.js";
 
 /**
  * Returns the `TouchDevice` for reading touch points and virtual control state.
@@ -18,14 +18,14 @@ import type { TouchDevice } from '../devices/touch.js'
  * ```
  */
 export function useTouch(): TouchDevice {
-  const engine = useEngine()
-  const input = engine.tryInject('input')
+  const engine = useEngine();
+  const input = engine.tryInject("input");
   if (!input) {
     throw new GwenPluginNotFoundError({
-      pluginName: '@gwenjs/input',
+      pluginName: "@gwenjs/input",
       hint: "Add '@gwenjs/input' to modules in gwen.config.ts",
-      docsUrl: 'https://gwenengine.dev/modules/input',
-    })
+      docsUrl: "https://gwenengine.dev/modules/input",
+    });
   }
-  return input.touch
+  return input.touch;
 }

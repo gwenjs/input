@@ -1,4 +1,4 @@
-import type { ProcessorDescriptor } from '../contexts/binding.js'
+import type { ProcessorDescriptor } from "../contexts/binding.js";
 
 /**
  * Normalizes a 2D vector to unit magnitude (length <= 1).
@@ -16,6 +16,6 @@ import type { ProcessorDescriptor } from '../contexts/binding.js'
  */
 export function Normalize(): ProcessorDescriptor {
   return {
-    _type: 'normalize',
-  }
+    _type: "normalize",
+  };
 }

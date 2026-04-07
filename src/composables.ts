@@ -1,9 +1,9 @@
-import { useEngine, GwenPluginNotFoundError } from '@gwenjs/core'
-import type { InputService } from './players/input-service.js'
-import type { PlayerInput } from './players/player-input.js'
-import type { InputRecorder } from './recording/recorder.js'
-import type { InputPlayback } from './recording/playback.js'
-import './augment.js'
+import { useEngine, GwenPluginNotFoundError } from "@gwenjs/core";
+import type { InputService } from "./players/input-service.js";
+import type { PlayerInput } from "./players/player-input.js";
+import type { InputRecorder } from "./recording/recorder.js";
+import type { InputPlayback } from "./recording/playback.js";
+import "./augment.js";
 
 /**
  * Returns the Input service registered by InputPlugin.
@@ -14,14 +14,14 @@ import './augment.js'
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  */
 export function useInput(): InputService {
-  const engine = useEngine()
-  const input = engine.tryInject('input')
-  if (input) return input
+  const engine = useEngine();
+  const input = engine.tryInject("input");
+  if (input) return input;
   throw new GwenPluginNotFoundError({
-    pluginName: '@gwenjs/input',
+    pluginName: "@gwenjs/input",
     hint: "Add '@gwenjs/input' to modules in gwen.config.ts",
-    docsUrl: 'https://gwenengine.dev/modules/input',
-  })
+    docsUrl: "https://gwenengine.dev/modules/input",
+  });
 }
 
 /**
@@ -41,7 +41,7 @@ export function useInput(): InputService {
  * ```
  */
 export function usePlayer(index = 0): PlayerInput {
-  return useInput().player(index)
+  return useInput().player(index);
 }
 
 /**
@@ -53,7 +53,7 @@ export function usePlayer(index = 0): PlayerInput {
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  */
 export function useInputRecorder(): InputRecorder {
-  return useInput().recorder
+  return useInput().recorder;
 }
 
 /**
@@ -65,5 +65,5 @@ export function useInputRecorder(): InputRecorder {
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  */
 export function useInputPlayback(): InputPlayback {
-  return useInput().playback
+  return useInput().playback;
 }

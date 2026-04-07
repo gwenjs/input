@@ -1,7 +1,7 @@
-import type { ActionRef, ActionType } from '../types.js'
-import type { PlayerInput } from '../players/player-input.js'
-import type { InputRecordingChangeValue, InputRecordingFrame } from './types.js'
-import { type InputRecording, type InputRecordingState } from './types.js'
+import type { ActionRef, ActionType } from "../types.js";
+import type { PlayerInput } from "../players/player-input.js";
+import type { InputRecordingChangeValue, InputRecordingFrame } from "./types.js";
+import { type InputRecording, type InputRecordingState } from "./types.js";
 
 /**
  * Captures per-frame action state from all `PlayerInput` instances and
@@ -22,21 +22,21 @@ import { type InputRecording, type InputRecordingState } from './types.js'
  * ```
  */
 export class InputRecorder {
-  private readonly _players: readonly PlayerInput[]
-  private readonly _targetFps: number
+  private readonly _players: readonly PlayerInput[];
+  private readonly _targetFps: number;
 
-  private _state: InputRecordingState = 'idle'
-  private _frames: InputRecordingFrame[] = []
-  private _frameCount = 0
+  private _state: InputRecordingState = "idle";
+  private _frames: InputRecordingFrame[] = [];
+  private _frameCount = 0;
 
   /** Action name ordered list — built on `start()`. */
-  private _actionNames: string[] = []
+  private _actionNames: string[] = [];
 
   /** Ordered action refs matching `_actionNames`. */
-  private _actionRefList: ActionRef<ActionType>[] = []
+  private _actionRefList: ActionRef<ActionType>[] = [];
 
   /** Previous per-player values: _prevValues[playerIndex][actionIndex] = last recorded value. */
-  private _prevValues: Map<number, InputRecordingChangeValue>[] = []
+  private _prevValues: Map<number, InputRecordingChangeValue>[] = [];
 
   /**
    * @param players - All `PlayerInput` instances managed by the plugin.
@@ -44,8 +44,8 @@ export class InputRecorder {
    *   Defaults to `60`.
    */
   constructor(players: readonly PlayerInput[], targetFps = 60) {
-    this._players = players
-    this._targetFps = targetFps
+    this._players = players;
+    this._targetFps = targetFps;
   }
 
   // ── Public state ────────────────────────────────────────────────────────────
@@ -55,12 +55,12 @@ export class InputRecorder {
    * `'idle'` until `start()` is called; `'recording'` while active.
    */
   get state(): InputRecordingState {
-    return this._state
+    return this._state;
   }
 
   /** Number of frames captured so far (updated after each `_captureFrame` call). */
   get frameCount(): number {
-    return this._frameCount
+    return this._frameCount;
   }
 
   // ── Recording lifecycle ─────────────────────────────────────────────────────
@@ -72,33 +72,33 @@ export class InputRecorder {
    * @throws {Error} If a recording is already in progress.
    */
   start(): void {
-    if (this._state === 'recording') {
-      throw new Error('[@gwenjs/input] InputRecorder: already recording — call stop() first')
+    if (this._state === "recording") {
+      throw new Error("[@gwenjs/input] InputRecorder: already recording — call stop() first");
     }
 
-    this._frames = []
-    this._frameCount = 0
+    this._frames = [];
+    this._frameCount = 0;
 
     // Collect all unique action refs across every player's registered contexts.
-    const seen = new Set<symbol>()
-    const refs: ActionRef<ActionType>[] = []
+    const seen = new Set<symbol>();
+    const refs: ActionRef<ActionType>[] = [];
 
     for (const player of this._players) {
       for (const [, ref] of player._getRegisteredActionRefs()) {
         if (!seen.has(ref.id)) {
-          seen.add(ref.id)
-          refs.push(ref)
+          seen.add(ref.id);
+          refs.push(ref);
         }
       }
     }
 
-    this._actionRefList = refs
-    this._actionNames = refs.map(r => r.name)
+    this._actionRefList = refs;
+    this._actionNames = refs.map((r) => r.name);
 
     // Initialise previous-value maps (empty = "no prior state").
-    this._prevValues = this._players.map(() => new Map<number, InputRecordingChangeValue>())
+    this._prevValues = this._players.map(() => new Map<number, InputRecordingChangeValue>());
 
-    this._state = 'recording'
+    this._state = "recording";
   }
 
   /**
@@ -106,8 +106,8 @@ export class InputRecorder {
    * Has no effect if called when not recording.
    */
   stop(): void {
-    if (this._state === 'recording') {
-      this._state = 'idle'
+    if (this._state === "recording") {
+      this._state = "idle";
     }
   }
 
@@ -118,15 +118,13 @@ export class InputRecorder {
    * @throws {Error} If no frames have been captured yet.
    */
   export(): InputRecording {
-    if (this._state === 'recording') {
-      throw new Error(
-        '[@gwenjs/input] InputRecorder.export(): call stop() before exporting',
-      )
+    if (this._state === "recording") {
+      throw new Error("[@gwenjs/input] InputRecorder.export(): call stop() before exporting");
     }
     if (this._frameCount === 0) {
       throw new Error(
-        '[@gwenjs/input] InputRecorder.export(): no frames captured — call start() then let at least one frame run',
-      )
+        "[@gwenjs/input] InputRecorder.export(): no frames captured — call start() then let at least one frame run",
+      );
     }
 
     return {
@@ -135,11 +133,11 @@ export class InputRecorder {
       targetFps: this._targetFps,
       playerCount: this._players.length,
       actionNames: [...this._actionNames],
-      frames: this._frames.map(f => ({
+      frames: this._frames.map((f) => ({
         index: f.index,
-        changes: f.changes.map(c => ({ ...c })),
+        changes: f.changes.map((c) => ({ ...c })),
       })),
-    }
+    };
   }
 
   // ── Internal frame capture ──────────────────────────────────────────────────
@@ -155,43 +153,43 @@ export class InputRecorder {
    * @param _frameIndex - The current absolute frame index (unused; kept for call-site compatibility).
    */
   _captureFrame(_frameIndex: number): void {
-    if (this._state !== 'recording') return
+    if (this._state !== "recording") return;
 
     const changes: {
-      player: number
-      actionIndex: number
-      value: InputRecordingChangeValue
-    }[] = []
+      player: number;
+      actionIndex: number;
+      value: InputRecordingChangeValue;
+    }[] = [];
 
     for (let pi = 0; pi < this._players.length; pi++) {
-      const player = this._players[pi]
-      const prevMap = this._prevValues[pi]
+      const player = this._players[pi];
+      const prevMap = this._prevValues[pi];
 
       for (let ai = 0; ai < this._actionRefList.length; ai++) {
-        const ref = this._actionRefList[ai]
+        const ref = this._actionRefList[ai];
 
-        let value: InputRecordingChangeValue
-        if (ref.type === 'button') {
-          value = player._getButtonValue(ref.id)
-        } else if (ref.type === 'axis1d') {
-          value = player._getAxis1dValue(ref.id)
+        let value: InputRecordingChangeValue;
+        if (ref.type === "button") {
+          value = player._getButtonValue(ref.id);
+        } else if (ref.type === "axis1d") {
+          value = player._getAxis1dValue(ref.id);
         } else {
-          value = player._getAxis2dValue(ref.id)
+          value = player._getAxis2dValue(ref.id);
         }
 
-        const prev = prevMap.get(ai)
+        const prev = prevMap.get(ai);
         if (!_valuesEqual(prev, value)) {
-          changes.push({ player: pi, actionIndex: ai, value })
-          prevMap.set(ai, value)
+          changes.push({ player: pi, actionIndex: ai, value });
+          prevMap.set(ai, value);
         }
       }
     }
 
     if (changes.length > 0) {
-      this._frames.push({ index: this._frameCount, changes: Object.freeze(changes) })
+      this._frames.push({ index: this._frameCount, changes: Object.freeze(changes) });
     }
 
-    this._frameCount++
+    this._frameCount++;
   }
 }
 
@@ -201,11 +199,11 @@ function _valuesEqual(
   a: InputRecordingChangeValue | undefined,
   b: InputRecordingChangeValue,
 ): boolean {
-  if (a === undefined) return false
-  if (typeof a !== typeof b) return false
-  if (typeof a === 'boolean' || typeof a === 'number') return a === b
+  if (a === undefined) return false;
+  if (typeof a !== typeof b) return false;
+  if (typeof a === "boolean" || typeof a === "number") return a === b;
   // axis2d
-  const bv = b as { x: number; y: number }
-  const av = a as { x: number; y: number }
-  return av.x === bv.x && av.y === bv.y
+  const bv = b as { x: number; y: number };
+  const av = a as { x: number; y: number };
+  return av.x === bv.x && av.y === bv.y;
 }

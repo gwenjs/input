@@ -1,4 +1,4 @@
-import type { MouseDeltaSource, MouseWheelSource } from './binding.js'
+import type { MouseDeltaSource, MouseWheelSource } from "./binding.js";
 
 /** Mouse button indices. */
 export const MouseButton = {
@@ -7,7 +7,7 @@ export const MouseButton = {
   Right: 2,
   Back: 3,
   Forward: 4,
-} as const
+} as const;
 
 /**
  * Creates a mouse movement delta source → `axis2d`.
@@ -21,7 +21,7 @@ export const MouseButton = {
  * ```
  */
 export function MouseDelta(): MouseDeltaSource {
-  return { _type: 'mouse:delta' }
+  return { _type: "mouse:delta" };
 }
 
 /**
@@ -35,5 +35,5 @@ export function MouseDelta(): MouseDeltaSource {
  * ```
  */
 export function MouseWheel(): MouseWheelSource {
-  return { _type: 'mouse:wheel' }
+  return { _type: "mouse:wheel" };
 }

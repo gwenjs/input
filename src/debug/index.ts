@@ -16,7 +16,7 @@ export type {
   BindingChangedEvent,
   DeviceChangedEvent,
   RecordingStateEvent,
-} from './debug-api.js'
+} from "./debug-api.js";
 
-export { InputDebugAPIImpl } from './debug-api.js'
-export { DevOverlay } from './dev-overlay.js'
+export { InputDebugAPIImpl } from "./debug-api.js";
+export { DevOverlay } from "./dev-overlay.js";

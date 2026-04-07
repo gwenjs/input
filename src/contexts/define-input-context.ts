@@ -1,4 +1,4 @@
-import type { BindingEntry } from './binding.js'
+import type { BindingEntry } from "./binding.js";
 
 /**
  * An immutable definition of an input context.
@@ -13,17 +13,17 @@ import type { BindingEntry } from './binding.js'
  */
 export interface InputContextDef {
   /** Unique context name — used to activate/deactivate at runtime. */
-  readonly name: string
+  readonly name: string;
   /**
    * Context priority. Higher values take precedence over lower values.
    * A menu context (priority 10) overrides a gameplay context (priority 0).
    */
-  readonly priority: number
+  readonly priority: number;
   /**
    * All binding entries in this context.
    * Created via `bind(action, source, { processors?, interactions? })`.
    */
-  readonly bindings: BindingEntry[]
+  readonly bindings: BindingEntry[];
 }
 
 /**
@@ -34,12 +34,12 @@ export interface InputContextConfig {
    * Context priority. Higher values take precedence over lower values.
    * Typically: gameplay = 0, in-vehicle = 1, menu = 10, cutscene = 20.
    */
-  priority: number
+  priority: number;
   /**
    * All binding entries for this context.
    * Use `bind(action, source, options?)` to create entries.
    */
-  bindings: BindingEntry[]
+  bindings: BindingEntry[];
 }
 
 /**
@@ -80,13 +80,10 @@ export interface InputContextConfig {
  * })
  * ```
  */
-export function defineInputContext(
-  name: string,
-  config: InputContextConfig,
-): InputContextDef {
+export function defineInputContext(name: string, config: InputContextConfig): InputContextDef {
   return {
     name,
     priority: config.priority,
     bindings: config.bindings,
-  }
+  };
 }

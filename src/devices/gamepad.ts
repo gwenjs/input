@@ -12,28 +12,28 @@
  * disconnects.
  */
 
-import type { InputDevice } from './index.js'
+import type { InputDevice } from "./index.js";
 
 export class GamepadDevice implements InputDevice {
   /** Called when a gamepad connects. Receives the gamepad slot index. */
-  onConnect?: (padIndex: number) => void
+  onConnect?: (padIndex: number) => void;
   /** Called when a gamepad disconnects. Receives the gamepad slot index. */
-  onDisconnect?: (padIndex: number) => void
+  onDisconnect?: (padIndex: number) => void;
 
   /** Raw Gamepad refs — used for axis/value reading only. */
-  private snapshot: (Gamepad | null)[] = []
+  private snapshot: (Gamepad | null)[] = [];
   /** Button pressed states this frame. */
-  private currButtonStates: boolean[][] = []
+  private currButtonStates: boolean[][] = [];
   /** Button pressed states last frame — used for edge detection. */
-  private prevButtonStates: boolean[][] = []
+  private prevButtonStates: boolean[][] = [];
 
   private onGamepadConnected = (e: GamepadEvent): void => {
-    this.onConnect?.(e.gamepad.index)
-  }
+    this.onConnect?.(e.gamepad.index);
+  };
 
   private onGamepadDisconnected = (e: GamepadEvent): void => {
-    this.onDisconnect?.(e.gamepad.index)
-  }
+    this.onDisconnect?.(e.gamepad.index);
+  };
 
   constructor(private deadzone = 0.15) {}
 
@@ -42,17 +42,20 @@ export class GamepadDevice implements InputDevice {
    * The `target` parameter is ignored — the Gamepad API always fires on `window`.
    */
   attach(_target: EventTarget): void {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('gamepadconnected', this.onGamepadConnected as EventListener)
-      window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected as EventListener)
+    if (typeof window !== "undefined") {
+      window.addEventListener("gamepadconnected", this.onGamepadConnected as EventListener);
+      window.addEventListener("gamepaddisconnected", this.onGamepadDisconnected as EventListener);
     }
   }
 
   /** Remove gamepad connection listeners from `window`. */
   detach(_target: EventTarget): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('gamepadconnected', this.onGamepadConnected as EventListener)
-      window.removeEventListener('gamepaddisconnected', this.onGamepadDisconnected as EventListener)
+    if (typeof window !== "undefined") {
+      window.removeEventListener("gamepadconnected", this.onGamepadConnected as EventListener);
+      window.removeEventListener(
+        "gamepaddisconnected",
+        this.onGamepadDisconnected as EventListener,
+      );
     }
   }
 
@@ -61,24 +64,22 @@ export class GamepadDevice implements InputDevice {
    * Calls `navigator.getGamepads()` once and copies button states to primitives.
    */
   update(): void {
-    this.prevButtonStates = this.currButtonStates
+    this.prevButtonStates = this.currButtonStates;
 
     const pads =
-      typeof navigator !== 'undefined' && navigator.getGamepads
+      typeof navigator !== "undefined" && navigator.getGamepads
         ? Array.from(navigator.getGamepads())
-        : []
+        : [];
 
-    this.snapshot = pads
-    this.currButtonStates = pads.map((gp) =>
-      gp ? Array.from(gp.buttons, (b) => b.pressed) : [],
-    )
+    this.snapshot = pads;
+    this.currButtonStates = pads.map((gp) => (gp ? Array.from(gp.buttons, (b) => b.pressed) : []));
   }
 
   /** Reset all snapshots to empty. */
   reset(): void {
-    this.snapshot = []
-    this.currButtonStates = []
-    this.prevButtonStates = []
+    this.snapshot = [];
+    this.currButtonStates = [];
+    this.prevButtonStates = [];
   }
 
   /**
@@ -87,7 +88,7 @@ export class GamepadDevice implements InputDevice {
    * @param btnIndex Button index
    */
   isButtonPressed(padIndex: number, btnIndex: number): boolean {
-    return this.currButtonStates[padIndex]?.[btnIndex] ?? false
+    return this.currButtonStates[padIndex]?.[btnIndex] ?? false;
   }
 
   /**
@@ -96,9 +97,9 @@ export class GamepadDevice implements InputDevice {
    * @param btnIndex Button index
    */
   isButtonJustPressed(padIndex: number, btnIndex: number): boolean {
-    const curr = this.currButtonStates[padIndex]?.[btnIndex] ?? false
-    const prev = this.prevButtonStates[padIndex]?.[btnIndex] ?? false
-    return curr && !prev
+    const curr = this.currButtonStates[padIndex]?.[btnIndex] ?? false;
+    const prev = this.prevButtonStates[padIndex]?.[btnIndex] ?? false;
+    return curr && !prev;
   }
 
   /**
@@ -107,9 +108,9 @@ export class GamepadDevice implements InputDevice {
    * @param btnIndex Button index
    */
   isButtonJustReleased(padIndex: number, btnIndex: number): boolean {
-    const curr = this.currButtonStates[padIndex]?.[btnIndex] ?? false
-    const prev = this.prevButtonStates[padIndex]?.[btnIndex] ?? false
-    return !curr && prev
+    const curr = this.currButtonStates[padIndex]?.[btnIndex] ?? false;
+    const prev = this.prevButtonStates[padIndex]?.[btnIndex] ?? false;
+    return !curr && prev;
   }
 
   /**
@@ -118,7 +119,7 @@ export class GamepadDevice implements InputDevice {
    * @param btnIndex Button index
    */
   getButtonValue(padIndex: number, btnIndex: number): number {
-    return this.snapshot[padIndex]?.buttons[btnIndex]?.value ?? 0
+    return this.snapshot[padIndex]?.buttons[btnIndex]?.value ?? 0;
   }
 
   /**
@@ -127,8 +128,8 @@ export class GamepadDevice implements InputDevice {
    * @param axisIndex Axis index
    */
   getAxis(padIndex: number, axisIndex: number): number {
-    const raw = this.snapshot[padIndex]?.axes[axisIndex] ?? 0
-    return Math.abs(raw) > this.deadzone ? raw : 0
+    const raw = this.snapshot[padIndex]?.axes[axisIndex] ?? 0;
+    return Math.abs(raw) > this.deadzone ? raw : 0;
   }
 
   /**
@@ -139,7 +140,7 @@ export class GamepadDevice implements InputDevice {
     return {
       x: this.getAxis(padIndex, 0),
       y: this.getAxis(padIndex, 1),
-    }
+    };
   }
 
   /**
@@ -150,20 +151,20 @@ export class GamepadDevice implements InputDevice {
     return {
       x: this.getAxis(padIndex, 2),
       y: this.getAxis(padIndex, 3),
-    }
+    };
   }
 
   /** Total number of currently connected gamepads. */
   connectedCount(): number {
-    return this.snapshot.filter(Boolean).length
+    return this.snapshot.filter(Boolean).length;
   }
 
   /** Array of slot indices for all currently connected gamepads. */
   getConnectedIndices(): number[] {
     return this.snapshot.reduce<number[]>((acc, gp, i) => {
-      if (gp) acc.push(i)
-      return acc
-    }, [])
+      if (gp) acc.push(i);
+      return acc;
+    }, []);
   }
 
   /**
@@ -171,6 +172,6 @@ export class GamepadDevice implements InputDevice {
    * @param padIndex Gamepad slot index
    */
   isConnected(padIndex: number): boolean {
-    return this.snapshot[padIndex] != null
+    return this.snapshot[padIndex] != null;
   }
 }

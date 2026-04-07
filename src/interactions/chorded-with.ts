@@ -1,5 +1,5 @@
-import type { InteractionDescriptor } from '../contexts/binding.js'
-import type { ActionRef, ActionType } from '../types.js'
+import type { InteractionDescriptor } from "../contexts/binding.js";
+import type { ActionRef, ActionType } from "../types.js";
 
 /**
  * Fires only when the given `actionRef` satisfies the given `condition`.
@@ -19,7 +19,7 @@ import type { ActionRef, ActionType } from '../types.js'
  */
 export function ChordedWith(
   actionRef: ActionRef<ActionType>,
-  condition: 'isPressed' | 'isJustTriggered',
+  condition: "isPressed" | "isJustTriggered",
 ): InteractionDescriptor {
-  return { _type: 'chordedwith', actionId: actionRef.id, condition }
+  return { _type: "chordedwith", actionId: actionRef.id, condition };
 }

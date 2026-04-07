@@ -1,21 +1,33 @@
-import type { InputContext } from '../contexts/input-context.js'
-import type { BindingEntry, BindingSource } from '../contexts/binding.js'
-import type { ActionRef, ActionType, ActionState, ButtonActionState, Axis1DActionState, Axis2DActionState } from '../types.js'
-import { ProcessorPipeline } from '../processors/pipeline.js'
-import { InteractionPipeline, type InteractionResult } from '../interactions/pipeline.js'
-import { resolveSource, type DeviceSet, type DeviceAssignment, type DeviceType } from './binding-resolver.js'
-import type { BindingsSnapshot } from './bindings-snapshot.js'
+import type { InputContext } from "../contexts/input-context.js";
+import type { BindingEntry, BindingSource } from "../contexts/binding.js";
+import type {
+  ActionRef,
+  ActionType,
+  ActionState,
+  ButtonActionState,
+  Axis1DActionState,
+  Axis2DActionState,
+} from "../types.js";
+import { ProcessorPipeline } from "../processors/pipeline.js";
+import { InteractionPipeline, type InteractionResult } from "../interactions/pipeline.js";
+import {
+  resolveSource,
+  type DeviceSet,
+  type DeviceAssignment,
+  type DeviceType,
+} from "./binding-resolver.js";
+import type { BindingsSnapshot } from "./bindings-snapshot.js";
 
 // ─── Internal state shapes ────────────────────────────────────────────────────
 
 interface Axis1DState {
-  value: number
-  rawValue: number
+  value: number;
+  rawValue: number;
 }
 
 interface Axis2DState {
-  value: { x: number; y: number }
-  rawValue: { x: number; y: number }
+  value: { x: number; y: number };
+  rawValue: { x: number; y: number };
 }
 
 // ─── PlayerInput ─────────────────────────────────────────────────────────────
@@ -34,43 +46,43 @@ interface Axis2DState {
  */
 export class PlayerInput {
   /** Zero-based player slot index. */
-  readonly index: number
+  readonly index: number;
 
-  private readonly _context: InputContext
-  private _deviceAssignment: DeviceAssignment
-  private readonly _devices: DeviceSet
+  private readonly _context: InputContext;
+  private _deviceAssignment: DeviceAssignment;
+  private readonly _devices: DeviceSet;
 
   /** Per-BindingEntry processor pipelines (GC-friendly: entries removed on rebind). */
-  private readonly _processorPipelines = new WeakMap<BindingEntry, ProcessorPipeline>()
+  private readonly _processorPipelines = new WeakMap<BindingEntry, ProcessorPipeline>();
   /** Per-BindingEntry interaction pipelines. */
-  private readonly _interactionPipelines = new WeakMap<BindingEntry, InteractionPipeline>()
+  private readonly _interactionPipelines = new WeakMap<BindingEntry, InteractionPipeline>();
 
   /** Binding overrides: action.id → (bindingIndex → replacement BindingEntry). */
-  private readonly _bindingOverrides = new Map<symbol, Map<number, BindingEntry>>()
+  private readonly _bindingOverrides = new Map<symbol, Map<number, BindingEntry>>();
 
   /** Latest button action results keyed by ActionRef.id. */
-  private readonly _currentStates = new Map<symbol, InteractionResult>()
+  private readonly _currentStates = new Map<symbol, InteractionResult>();
 
   /** Latest axis1d values keyed by ActionRef.id. */
-  private readonly _axis1dStates = new Map<symbol, Axis1DState>()
+  private readonly _axis1dStates = new Map<symbol, Axis1DState>();
 
   /** Latest axis2d values keyed by ActionRef.id. */
-  private readonly _axis2dStates = new Map<symbol, Axis2DState>()
+  private readonly _axis2dStates = new Map<symbol, Axis2DState>();
 
   /**
    * When `InputPlayback` is active this map overrides live device states.
    * `action()` reads from here first; null means live input is used.
    * @internal
    */
-  _playbackStates: Map<symbol, ActionState<ActionType>> | null = null
+  _playbackStates: Map<symbol, ActionState<ActionType>> | null = null;
 
   /** Optional callback fired after any binding change. */
-  private readonly _onBindingsChanged: ((snapshot: BindingsSnapshot) => void) | undefined
+  private readonly _onBindingsChanged: ((snapshot: BindingsSnapshot) => void) | undefined;
 
   /** Resolve function for an in-progress `captureNextInput` call. */
-  private _captureResolve: ((source: BindingSource | null) => void) | null = null
+  private _captureResolve: ((source: BindingSource | null) => void) | null = null;
   /** Remaining milliseconds until `captureNextInput` times out. */
-  private _captureTimeoutMs: number | null = null
+  private _captureTimeoutMs: number | null = null;
 
   constructor(
     index: number,
@@ -79,11 +91,11 @@ export class PlayerInput {
     assignment: DeviceAssignment,
     onBindingsChanged?: (snapshot: BindingsSnapshot) => void,
   ) {
-    this.index = index
-    this._context = context
-    this._devices = devices
-    this._deviceAssignment = assignment
-    this._onBindingsChanged = onBindingsChanged
+    this.index = index;
+    this._context = context;
+    this._devices = devices;
+    this._deviceAssignment = assignment;
+    this._onBindingsChanged = onBindingsChanged;
   }
 
   // ── Context management ──────────────────────────────────────────────────────
@@ -93,21 +105,21 @@ export class PlayerInput {
    * @throws {Error} If the context was never registered.
    */
   activateContext(name: string): void {
-    this._context.activate(name)
+    this._context.activate(name);
   }
 
   /**
    * Deactivates an input context by name. No-op if not active.
    */
   deactivateContext(name: string): void {
-    this._context.deactivate(name)
+    this._context.deactivate(name);
   }
 
   /**
    * Names of all currently active contexts in priority order (highest first).
    */
   get activeContexts(): readonly string[] {
-    return this._context.activeContextNames
+    return this._context.activeContextNames;
   }
 
   // ── Device assignment ───────────────────────────────────────────────────────
@@ -119,14 +131,14 @@ export class PlayerInput {
    * @param slot - Gamepad slot (0–3). Ignored for keyboard+mouse and touch.
    */
   assignDevice(type: DeviceType, slot = 0): void {
-    this._deviceAssignment = { type, slot }
+    this._deviceAssignment = { type, slot };
   }
 
   /**
    * The player's currently assigned input device.
    */
   get assignedDevice(): DeviceAssignment {
-    return this._deviceAssignment
+    return this._deviceAssignment;
   }
 
   // ── Frame update ────────────────────────────────────────────────────────────
@@ -141,12 +153,12 @@ export class PlayerInput {
   _updateFrame(dt: number): void {
     // Tick captureNextInput timeout
     if (this._captureTimeoutMs !== null) {
-      this._captureTimeoutMs -= dt * 1000
+      this._captureTimeoutMs -= dt * 1000;
       if (this._captureTimeoutMs <= 0) {
-        const resolve = this._captureResolve
-        this._captureResolve = null
-        this._captureTimeoutMs = null
-        resolve?.(null)
+        const resolve = this._captureResolve;
+        this._captureResolve = null;
+        this._captureTimeoutMs = null;
+        resolve?.(null);
       }
     }
 
@@ -154,42 +166,46 @@ export class PlayerInput {
     // defined in currently-inactive contexts resolve to safe defaults.
     // Note: inactive context bindings are NOT evaluated — their pipeline state
     // freezes until the context is reactivated.
-    const allActions = new Map<symbol, ActionRef<ActionType>>()
+    const allActions = new Map<symbol, ActionRef<ActionType>>();
     for (const ctx of this._context.getAllRegistered()) {
       for (const entry of ctx.bindings) {
-        allActions.set(entry.action.id, entry.action)
+        allActions.set(entry.action.id, entry.action);
       }
     }
 
     // Clear previous frame results
-    this._currentStates.clear()
-    this._axis1dStates.clear()
-    this._axis2dStates.clear()
+    this._currentStates.clear();
+    this._axis1dStates.clear();
+    this._axis2dStates.clear();
 
-    const slot = this._deviceAssignment.slot
+    const slot = this._deviceAssignment.slot;
 
     const evaluateAction = (ref: ActionRef<ActionType>, bindings: BindingEntry[]): void => {
-      if (ref.type === 'button') {
-        this._evaluateButtonBindings(ref, bindings, dt, slot)
-      } else if (ref.type === 'axis1d') {
-        this._evaluateAxis1DBindings(ref, bindings, slot)
+      if (ref.type === "button") {
+        this._evaluateButtonBindings(ref, bindings, dt, slot);
+      } else if (ref.type === "axis1d") {
+        this._evaluateAxis1DBindings(ref, bindings, slot);
       } else {
-        this._evaluateAxis2DBindings(ref, bindings, slot)
+        this._evaluateAxis2DBindings(ref, bindings, slot);
       }
-    }
+    };
 
     // First pass: non-chording actions (safe to evaluate immediately)
     for (const [, ref] of allActions) {
-      const bindings = this._getActiveBindings(ref)
-      const hasChordedWith = bindings.some(b => b.interactions.some(i => i._type === 'chordedwith'))
-      if (!hasChordedWith) evaluateAction(ref, bindings)
+      const bindings = this._getActiveBindings(ref);
+      const hasChordedWith = bindings.some((b) =>
+        b.interactions.some((i) => i._type === "chordedwith"),
+      );
+      if (!hasChordedWith) evaluateAction(ref, bindings);
     }
 
     // Second pass: chording actions (depend on first-pass states being set)
     for (const [, ref] of allActions) {
-      const bindings = this._getActiveBindings(ref)
-      const hasChordedWith = bindings.some(b => b.interactions.some(i => i._type === 'chordedwith'))
-      if (hasChordedWith) evaluateAction(ref, bindings)
+      const bindings = this._getActiveBindings(ref);
+      const hasChordedWith = bindings.some((b) =>
+        b.interactions.some((i) => i._type === "chordedwith"),
+      );
+      if (hasChordedWith) evaluateAction(ref, bindings);
     }
   }
 
@@ -205,40 +221,40 @@ export class PlayerInput {
   action<T extends ActionType>(ref: ActionRef<T>): ActionState<T> {
     // Playback takes precedence over live device state.
     if (this._playbackStates !== null) {
-      const ps = this._playbackStates.get(ref.id)
-      if (ps !== undefined) return ps as ActionState<T>
+      const ps = this._playbackStates.get(ref.id);
+      if (ps !== undefined) return ps as ActionState<T>;
     }
 
-    if (ref.type === 'button') {
-      const r = this._currentStates.get(ref.id)
+    if (ref.type === "button") {
+      const r = this._currentStates.get(ref.id);
       return {
-        type: 'button',
+        type: "button",
         isPressed: r?.isPressed ?? false,
         isJustTriggered: r?.isJustTriggered ?? false,
         isJustReleased: r?.isJustReleased ?? false,
         holdTime: r?.holdTime ?? 0,
-      } as ButtonActionState as ActionState<T>
+      } as ButtonActionState as ActionState<T>;
     }
 
-    if (ref.type === 'axis1d') {
-      const s = this._axis1dStates.get(ref.id)
+    if (ref.type === "axis1d") {
+      const s = this._axis1dStates.get(ref.id);
       return {
-        type: 'axis1d',
+        type: "axis1d",
         value: s?.value ?? 0,
         rawValue: s?.rawValue ?? 0,
-      } as Axis1DActionState as ActionState<T>
+      } as Axis1DActionState as ActionState<T>;
     }
 
     // axis2d
-    const s = this._axis2dStates.get(ref.id)
-    const value = s?.value ?? { x: 0, y: 0 }
-    const rawValue = s?.rawValue ?? { x: 0, y: 0 }
+    const s = this._axis2dStates.get(ref.id);
+    const value = s?.value ?? { x: 0, y: 0 };
+    const rawValue = s?.rawValue ?? { x: 0, y: 0 };
     return {
-      type: 'axis2d',
+      type: "axis2d",
       value,
       rawValue,
       magnitude: Math.sqrt(value.x ** 2 + value.y ** 2),
-    } as Axis2DActionState as ActionState<T>
+    } as Axis2DActionState as ActionState<T>;
   }
 
   // ── Rebinding ───────────────────────────────────────────────────────────────
@@ -254,13 +270,13 @@ export class PlayerInput {
    * @param newSource - The new raw input source.
    */
   rebind(action: ActionRef<ActionType>, bindingIndex: number, newSource: BindingSource): void {
-    const bindings = this._context.getBindingsForAction(action)
-    const original = bindings[bindingIndex]
-    if (!original) return
+    const bindings = this._context.getBindingsForAction(action);
+    const original = bindings[bindingIndex];
+    if (!original) return;
 
-    const newEntry: BindingEntry = { ...original, source: newSource }
-    this._setOverride(action.id, bindingIndex, newEntry)
-    this._notifyBindingsChanged()
+    const newEntry: BindingEntry = { ...original, source: newSource };
+    this._setOverride(action.id, bindingIndex, newEntry);
+    this._notifyBindingsChanged();
   }
 
   /**
@@ -270,19 +286,19 @@ export class PlayerInput {
    * @param bindingIndex - Which binding override to remove.
    */
   resetBinding(action: ActionRef<ActionType>, bindingIndex: number): void {
-    const overrides = this._bindingOverrides.get(action.id)
-    if (!overrides) return
-    overrides.delete(bindingIndex)
-    if (overrides.size === 0) this._bindingOverrides.delete(action.id)
-    this._notifyBindingsChanged()
+    const overrides = this._bindingOverrides.get(action.id);
+    if (!overrides) return;
+    overrides.delete(bindingIndex);
+    if (overrides.size === 0) this._bindingOverrides.delete(action.id);
+    this._notifyBindingsChanged();
   }
 
   /**
    * Removes all binding overrides for this player, restoring all defaults.
    */
   resetBindings(): void {
-    this._bindingOverrides.clear()
-    this._notifyBindingsChanged()
+    this._bindingOverrides.clear();
+    this._notifyBindingsChanged();
   }
 
   // ── Input capture ───────────────────────────────────────────────────────────
@@ -303,11 +319,11 @@ export class PlayerInput {
     return new Promise((resolve) => {
       // If already capturing, cancel the previous request
       if (this._captureResolve) {
-        this._captureResolve(null)
+        this._captureResolve(null);
       }
-      this._captureResolve = resolve
-      this._captureTimeoutMs = options?.timeout ?? 5000
-    })
+      this._captureResolve = resolve;
+      this._captureTimeoutMs = options?.timeout ?? 5000;
+    });
   }
 
   // ── Snapshot ────────────────────────────────────────────────────────────────
@@ -317,17 +333,17 @@ export class PlayerInput {
    * Persist and pass back to `importBindings()` to restore later.
    */
   exportBindings(): BindingsSnapshot {
-    const overrides: BindingsSnapshot['overrides'] = []
+    const overrides: BindingsSnapshot["overrides"] = [];
     for (const indexMap of this._bindingOverrides.values()) {
       for (const [bindingIndex, entry] of indexMap) {
         overrides.push({
           actionId: entry.action.name,
           bindingIndex,
           newBinding: entry.source,
-        })
+        });
       }
     }
-    return { version: 1, player: this.index, overrides }
+    return { version: 1, player: this.index, overrides };
   }
 
   /**
@@ -339,71 +355,71 @@ export class PlayerInput {
    * If two actions share the same `.name` string, only the first-registered action will be matched.
    */
   importBindings(snapshot: BindingsSnapshot): void {
-    this._bindingOverrides.clear()
+    this._bindingOverrides.clear();
 
     // Build a name→ActionRef lookup from all registered contexts
-    const actionsByName = new Map<string, ActionRef<ActionType>>()
+    const actionsByName = new Map<string, ActionRef<ActionType>>();
     for (const ctx of this._context.getAllRegistered()) {
       for (const entry of ctx.bindings) {
         if (!actionsByName.has(entry.action.name)) {
-          actionsByName.set(entry.action.name, entry.action)
+          actionsByName.set(entry.action.name, entry.action);
         }
       }
     }
 
     for (const { actionId, bindingIndex, newBinding } of snapshot.overrides) {
-      const actionRef = actionsByName.get(actionId)
-      if (!actionRef) continue
+      const actionRef = actionsByName.get(actionId);
+      if (!actionRef) continue;
 
-      const bindings = this._context.getBindingsForAction(actionRef)
-      const original = bindings[bindingIndex]
-      if (!original) continue
+      const bindings = this._context.getBindingsForAction(actionRef);
+      const original = bindings[bindingIndex];
+      if (!original) continue;
 
       const newEntry: BindingEntry = {
         ...original,
         source: newBinding as BindingSource,
-      }
-      this._setOverride(actionRef.id, bindingIndex, newEntry)
+      };
+      this._setOverride(actionRef.id, bindingIndex, newEntry);
     }
 
-    this._notifyBindingsChanged()
+    this._notifyBindingsChanged();
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   /** Returns the active bindings for an action with overrides applied. */
   private _getActiveBindings(ref: ActionRef<ActionType>): BindingEntry[] {
-    const bindings = this._context.getBindingsForAction(ref)
-    const overrides = this._bindingOverrides.get(ref.id)
-    if (!overrides) return bindings
-    return bindings.map((entry, idx) => overrides.get(idx) ?? entry)
+    const bindings = this._context.getBindingsForAction(ref);
+    const overrides = this._bindingOverrides.get(ref.id);
+    if (!overrides) return bindings;
+    return bindings.map((entry, idx) => overrides.get(idx) ?? entry);
   }
 
   private _setOverride(actionId: symbol, bindingIndex: number, entry: BindingEntry): void {
-    let map = this._bindingOverrides.get(actionId)
+    let map = this._bindingOverrides.get(actionId);
     if (!map) {
-      map = new Map()
-      this._bindingOverrides.set(actionId, map)
+      map = new Map();
+      this._bindingOverrides.set(actionId, map);
     }
-    map.set(bindingIndex, entry)
+    map.set(bindingIndex, entry);
   }
 
   private _getOrCreatePP(entry: BindingEntry): ProcessorPipeline {
-    let pp = this._processorPipelines.get(entry)
+    let pp = this._processorPipelines.get(entry);
     if (!pp) {
-      pp = new ProcessorPipeline()
-      this._processorPipelines.set(entry, pp)
+      pp = new ProcessorPipeline();
+      this._processorPipelines.set(entry, pp);
     }
-    return pp
+    return pp;
   }
 
   private _getOrCreateIP(entry: BindingEntry): InteractionPipeline {
-    let ip = this._interactionPipelines.get(entry)
+    let ip = this._interactionPipelines.get(entry);
     if (!ip) {
-      ip = new InteractionPipeline(entry.interactions)
-      this._interactionPipelines.set(entry, ip)
+      ip = new InteractionPipeline(entry.interactions);
+      this._interactionPipelines.set(entry, ip);
     }
-    return ip
+    return ip;
   }
 
   private _evaluateButtonBindings(
@@ -412,47 +428,52 @@ export class PlayerInput {
     dt: number,
     slot: number,
   ): void {
-    let bestResult: InteractionResult | null = null
+    let bestResult: InteractionResult | null = null;
 
     for (const entry of bindings) {
-      const pp = this._getOrCreatePP(entry)
-      const ip = this._getOrCreateIP(entry)
+      const pp = this._getOrCreatePP(entry);
+      const ip = this._getOrCreateIP(entry);
 
-      const rawValue = resolveSource(entry.source, this._devices, slot)
-      const processed = pp.process(rawValue, entry.processors)
+      const rawValue = resolveSource(entry.source, this._devices, slot);
+      const processed = pp.process(rawValue, entry.processors);
 
-      let rawPressed: boolean
-      if (typeof processed === 'boolean') rawPressed = processed
-      else if (typeof processed === 'number') rawPressed = processed !== 0
-      else rawPressed = Math.sqrt(processed.x ** 2 + processed.y ** 2) > 0
+      let rawPressed: boolean;
+      if (typeof processed === "boolean") rawPressed = processed;
+      else if (typeof processed === "number") rawPressed = processed !== 0;
+      else rawPressed = Math.sqrt(processed.x ** 2 + processed.y ** 2) > 0;
 
       // AllOf: all specified keys must be held simultaneously
       for (const interaction of entry.interactions) {
-        if (interaction._type === 'allof') {
-          const keys = interaction.keys as Array<string | number>
-          const allPressed = keys.every(k =>
-            typeof k === 'number'
+        if (interaction._type === "allof") {
+          const keys = interaction.keys as Array<string | number>;
+          const allPressed = keys.every((k) =>
+            typeof k === "number"
               ? this._devices.gamepad.isButtonPressed(slot, k)
-              : this._devices.keyboard.isPressed(k)
-          )
-          if (!allPressed) { rawPressed = false; break }
+              : this._devices.keyboard.isPressed(k),
+          );
+          if (!allPressed) {
+            rawPressed = false;
+            break;
+          }
         }
       }
 
-      const result = ip.evaluate(rawPressed, dt, (id) => this._currentStates.get(id) ?? null)
+      const result = ip.evaluate(rawPressed, dt, (id) => this._currentStates.get(id) ?? null);
 
       // Take the first active result; keep evaluating all to maintain pipeline state
       if (
         bestResult === null ||
-        (!bestResult.isPressed && !bestResult.isJustTriggered && !bestResult.isJustReleased &&
+        (!bestResult.isPressed &&
+          !bestResult.isJustTriggered &&
+          !bestResult.isJustReleased &&
           (result.isPressed || result.isJustTriggered || result.isJustReleased))
       ) {
-        bestResult = result
+        bestResult = result;
       }
     }
 
     if (bestResult !== null) {
-      this._currentStates.set(ref.id, bestResult)
+      this._currentStates.set(ref.id, bestResult);
     }
   }
 
@@ -461,22 +482,22 @@ export class PlayerInput {
     bindings: BindingEntry[],
     slot: number,
   ): void {
-    let sumValue = 0
-    let sumRaw = 0
+    let sumValue = 0;
+    let sumRaw = 0;
 
     for (const entry of bindings) {
-      const pp = this._getOrCreatePP(entry)
-      const rawValue = resolveSource(entry.source, this._devices, slot)
-      const processed = pp.process(rawValue, entry.processors)
+      const pp = this._getOrCreatePP(entry);
+      const rawValue = resolveSource(entry.source, this._devices, slot);
+      const processed = pp.process(rawValue, entry.processors);
 
-      if (typeof rawValue === 'number') sumRaw += rawValue
-      else if (typeof rawValue === 'boolean') sumRaw += rawValue ? 1 : 0
+      if (typeof rawValue === "number") sumRaw += rawValue;
+      else if (typeof rawValue === "boolean") sumRaw += rawValue ? 1 : 0;
 
-      if (typeof processed === 'number') sumValue += processed
-      else if (typeof processed === 'boolean') sumValue += processed ? 1 : 0
+      if (typeof processed === "number") sumValue += processed;
+      else if (typeof processed === "boolean") sumValue += processed ? 1 : 0;
     }
 
-    this._axis1dStates.set(ref.id, { value: sumValue, rawValue: sumRaw })
+    this._axis1dStates.set(ref.id, { value: sumValue, rawValue: sumRaw });
   }
 
   private _evaluateAxis2DBindings(
@@ -484,34 +505,34 @@ export class PlayerInput {
     bindings: BindingEntry[],
     slot: number,
   ): void {
-    let sumX = 0
-    let sumY = 0
-    let sumRawX = 0
-    let sumRawY = 0
+    let sumX = 0;
+    let sumY = 0;
+    let sumRawX = 0;
+    let sumRawY = 0;
 
     for (const entry of bindings) {
-      const pp = this._getOrCreatePP(entry)
-      const rawValue = resolveSource(entry.source, this._devices, slot)
-      const processed = pp.process(rawValue, entry.processors)
+      const pp = this._getOrCreatePP(entry);
+      const rawValue = resolveSource(entry.source, this._devices, slot);
+      const processed = pp.process(rawValue, entry.processors);
 
-      if (typeof rawValue === 'object' && 'x' in rawValue) {
-        sumRawX += rawValue.x
-        sumRawY += rawValue.y
+      if (typeof rawValue === "object" && "x" in rawValue) {
+        sumRawX += rawValue.x;
+        sumRawY += rawValue.y;
       }
-      if (typeof processed === 'object' && 'x' in processed) {
-        sumX += processed.x
-        sumY += processed.y
+      if (typeof processed === "object" && "x" in processed) {
+        sumX += processed.x;
+        sumY += processed.y;
       }
     }
 
     this._axis2dStates.set(ref.id, {
       value: { x: sumX, y: sumY },
       rawValue: { x: sumRawX, y: sumRawY },
-    })
+    });
   }
 
   private _notifyBindingsChanged(): void {
-    this._onBindingsChanged?.(this.exportBindings())
+    this._onBindingsChanged?.(this.exportBindings());
   }
 
   // ── Recording / playback internals ──────────────────────────────────────────
@@ -521,13 +542,13 @@ export class PlayerInput {
    * @internal
    */
   _getAllContextBindings(): Array<{ contextName: string; binding: BindingEntry }> {
-    const result: Array<{ contextName: string; binding: BindingEntry }> = []
+    const result: Array<{ contextName: string; binding: BindingEntry }> = [];
     for (const ctx of this._context.getAllRegistered()) {
       for (const entry of ctx.bindings) {
-        result.push({ contextName: ctx.name, binding: entry })
+        result.push({ contextName: ctx.name, binding: entry });
       }
     }
-    return result
+    return result;
   }
 
   /**
@@ -540,13 +561,13 @@ export class PlayerInput {
    * @internal
    */
   _getRegisteredActionRefs(): Map<symbol, ActionRef<ActionType>> {
-    const map = new Map<symbol, ActionRef<ActionType>>()
+    const map = new Map<symbol, ActionRef<ActionType>>();
     for (const ctx of this._context.getAllRegistered()) {
       for (const entry of ctx.bindings) {
-        map.set(entry.action.id, entry.action)
+        map.set(entry.action.id, entry.action);
       }
     }
-    return map
+    return map;
   }
 
   /**
@@ -554,7 +575,7 @@ export class PlayerInput {
    * @internal
    */
   _getButtonValue(id: symbol): boolean {
-    return this._currentStates.get(id)?.isPressed ?? false
+    return this._currentStates.get(id)?.isPressed ?? false;
   }
 
   /**
@@ -562,7 +583,7 @@ export class PlayerInput {
    * @internal
    */
   _getAxis1dValue(id: symbol): number {
-    return this._axis1dStates.get(id)?.value ?? 0
+    return this._axis1dStates.get(id)?.value ?? 0;
   }
 
   /**
@@ -570,6 +591,6 @@ export class PlayerInput {
    * @internal
    */
   _getAxis2dValue(id: symbol): { x: number; y: number } {
-    return this._axis2dStates.get(id)?.value ?? { x: 0, y: 0 }
+    return this._axis2dStates.get(id)?.value ?? { x: 0, y: 0 };
   }
 }

@@ -10,6 +10,7 @@ export * from './actions/index.js'
 export * from './contexts/index.js'
 export * from './constants/index.js'
 export * from './devices/index.js'
+export * from './processors/index.js'
 
 // Composables
 export { useInput } from './composables.js'

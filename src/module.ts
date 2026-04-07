@@ -23,8 +23,7 @@ export default defineGwenModule<InputPluginConfig>({
 
     kit.addAutoImports([
       { name: 'useInput', from: '@gwenjs/input' },
-      { name: 'useAction', from: '@gwenjs/input' },
-      { name: 'usePlayer', from: '@gwenjs/input' },
+      // useAction and usePlayer added in Phase 7 (composables)
       { name: 'defineInputSchema', from: '@gwenjs/input' },
       { name: 'defineInputContext', from: '@gwenjs/input' },
       { name: 'bind', from: '@gwenjs/input' },

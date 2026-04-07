@@ -1,5 +1,3 @@
-/// <reference types="vite/client" />
-
 // @ts-expect-error — workspace dep not yet installed; resolves in monorepo
 import { definePlugin } from '@gwenjs/kit/plugin'
 import type { GwenEngine } from '@gwenjs/core'
@@ -85,11 +83,11 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
   const cfg = normalizeConfig(opts)
   let log: ReturnType<GwenEngine['logger']['child']>
 
-  let keyboard: KeyboardDevice
-  let mouse: MouseDevice
-  let gamepad: GamepadDevice
-  let touch: TouchDevice
-  let gyro: GyroDevice
+  let keyboard: KeyboardDevice | undefined
+  let mouse: MouseDevice | undefined
+  let gamepad: GamepadDevice | undefined
+  let touch: TouchDevice | undefined
+  let gyro: GyroDevice | undefined
 
   return {
     name: '@gwenjs/input',
@@ -128,11 +126,11 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
     onBeforeUpdate(_dt: number) {
       if (typeof window !== 'undefined') {
-        keyboard.update()
-        mouse.update()
-        gamepad.update()
-        touch.update()
-        gyro.update()
+        keyboard?.update()
+        mouse?.update()
+        gamepad?.update()
+        touch?.update()
+        gyro?.update()
       }
     },
 
@@ -143,11 +141,11 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
     teardown() {
       if (typeof window !== 'undefined') {
-        keyboard.detach(cfg.eventTarget)
-        mouse.detach(cfg.eventTarget)
-        gamepad.detach(window)
-        touch.detach(cfg.eventTarget)
-        gyro.detach(window)
+        keyboard?.detach(cfg.eventTarget)
+        mouse?.detach(cfg.eventTarget)
+        gamepad?.detach(window)
+        touch?.detach(cfg.eventTarget)
+        gyro?.detach(window)
       }
       log?.info('torn down')
     },

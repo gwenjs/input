@@ -18,9 +18,9 @@
 import type { InputDevice } from './index.js'
 
 export interface GyroState {
-  /** Left/right tilt in degrees, −180 to 180. Maps to `DeviceOrientationEvent.beta`. */
+  /** Left/right tilt in degrees, -90 to 90. Maps to DeviceOrientationEvent.gamma. */
   roll: number
-  /** Front/back tilt in degrees, −90 to 90. Maps to `DeviceOrientationEvent.gamma`. */
+  /** Front/back tilt in degrees, -180 to 180. Maps to DeviceOrientationEvent.beta. */
   pitch: number
   /** Compass heading in degrees, 0 to 360. Maps to `DeviceOrientationEvent.alpha`. */
   yaw: number
@@ -44,8 +44,8 @@ export class GyroDevice implements InputDevice {
   private onOrientation = (e: DeviceOrientationEvent): void => {
     this._isAvailable = true
     this._rawOrientation.yaw = e.alpha ?? 0
-    this._rawOrientation.roll = e.beta ?? 0
-    this._rawOrientation.pitch = e.gamma ?? 0
+    this._rawOrientation.pitch = e.beta ?? 0
+    this._rawOrientation.roll = e.gamma ?? 0
   }
 
   private onMotion = (e: DeviceMotionEvent): void => {
@@ -100,6 +100,7 @@ export class GyroDevice implements InputDevice {
     this._orientation = { roll: 0, pitch: 0, yaw: 0 }
     this._rawOrientation = { roll: 0, pitch: 0, yaw: 0 }
     this._velocity = { alpha: 0, beta: 0, gamma: 0 }
+    this._isAvailable = false
   }
 
   /** Current smoothed device orientation. */

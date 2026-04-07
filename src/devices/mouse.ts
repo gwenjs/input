@@ -90,6 +90,7 @@ export class MouseDevice implements InputDevice {
    */
   attach(target: EventTarget, canvas?: HTMLCanvasElement): void {
     this.canvas = canvas ?? null
+    this.cachedRect = null
     target.addEventListener('mousemove', this.onMouseMove as EventListener)
     target.addEventListener('mousedown', this.onMouseDown as EventListener)
     target.addEventListener('mouseup', this.onMouseUp as EventListener)

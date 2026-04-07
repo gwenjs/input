@@ -6,6 +6,9 @@ import type { GyroDevice } from '../devices/gyro.js'
  * Check `gyro.isAvailable` before using orientation values — it becomes `true`
  * only after the first `deviceorientation` event fires.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  *
  * @example

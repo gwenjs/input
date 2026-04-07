@@ -6,6 +6,9 @@ import type { GamepadDevice } from '../devices/gamepad.js'
  * Use for escape-hatch access to raw gamepad states.
  * Prefer `useAction()` for game logic.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @param slot - Gamepad slot (currently unused — all gamepads share one `GamepadDevice`). Default: 0.
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  *
@@ -15,7 +18,7 @@ import type { GamepadDevice } from '../devices/gamepad.js'
  * if (gp.isButtonJustPressed(0, 0)) { ... } // pad 0, button 0
  * ```
  */
-export function useGamepad(_slot = 0): GamepadDevice {
+export function useGamepad(slot = 0): GamepadDevice {
   const engine = useEngine()
   const input = engine.tryInject('input')
   if (!input) {

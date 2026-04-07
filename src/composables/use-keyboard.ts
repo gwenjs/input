@@ -6,6 +6,9 @@ import type { KeyboardDevice } from '../devices/keyboard.js'
  * Use for escape-hatch access to raw key states.
  * Prefer `useAction()` for game logic.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  *
  * @example

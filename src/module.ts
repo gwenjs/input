@@ -31,7 +31,6 @@ export default defineGwenModule<InputPluginConfig>({
       { name: 'useTouch', from: '@gwenjs/input' },
       { name: 'useGyro', from: '@gwenjs/input' },
       { name: 'usePointer', from: '@gwenjs/input' },
-      // useAction and usePlayer added in Phase 7 (composables)
       { name: 'defineInputSchema', from: '@gwenjs/input' },
       { name: 'defineInputContext', from: '@gwenjs/input' },
       { name: 'bind', from: '@gwenjs/input' },

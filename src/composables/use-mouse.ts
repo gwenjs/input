@@ -6,6 +6,9 @@ import type { MouseDevice } from '../devices/mouse.js'
  * Use for escape-hatch access to raw mouse states.
  * Prefer `useAction()` for game logic, or `usePointer()` for unified pointer input.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  *
  * @example

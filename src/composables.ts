@@ -6,6 +6,9 @@ import './augment.js'
 /**
  * Returns the Input service registered by InputPlugin.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  */
 export function useInput(): InputService {
@@ -22,6 +25,9 @@ export function useInput(): InputService {
 /**
  * Returns the PlayerInput for the given player slot.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @param index - Player slot index (0-based).
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  * @throws {RangeError} If index is out of bounds.
@@ -32,6 +38,6 @@ export function useInput(): InputService {
  * const jumpState = p2.action(Jump)
  * ```
  */
-export function usePlayer(index: number): PlayerInput {
+export function usePlayer(index = 0): PlayerInput {
   return useInput().player(index)
 }

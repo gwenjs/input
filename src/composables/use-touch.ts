@@ -4,6 +4,9 @@ import type { TouchDevice } from '../devices/touch.js'
 /**
  * Returns the `TouchDevice` for reading touch points and virtual control state.
  *
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * Note: `TouchDevice` is a stub in Phase 6 — most properties are not yet implemented.
  * Check `usePointer()` for a stable unified pointer abstraction.
  *

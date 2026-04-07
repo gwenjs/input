@@ -7,6 +7,9 @@ import type { ActionRef, ActionType, ActionState } from '../types.js'
  * @param ref - The action reference (from `defineAction` or `defineInputSchema`).
  * @param playerIndex - Player slot (0-based). Default: 0.
  * @returns The typed `ActionState` for this action.
+ * Must be called inside an active engine context (inside `defineSystem()`,
+ * `engine.run()`, or a plugin lifecycle hook).
+ *
  * @throws {GwenPluginNotFoundError} If InputPlugin is not registered.
  *
  * @example

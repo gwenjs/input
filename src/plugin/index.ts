@@ -6,6 +6,11 @@ import type { GwenEngine } from '@gwenjs/core'
 import { normalizeConfig } from './config.js'
 import type { InputPluginConfig } from './config.js'
 import type { InputService } from '../types.js'
+import { KeyboardDevice } from '../devices/keyboard.js'
+import { MouseDevice } from '../devices/mouse.js'
+import { GamepadDevice } from '../devices/gamepad.js'
+import { TouchDevice } from '../devices/touch.js'
+import { GyroDevice } from '../devices/gyro.js'
 
 export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig } from './config.js'
 
@@ -80,6 +85,12 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
   const cfg = normalizeConfig(opts)
   let log: ReturnType<GwenEngine['logger']['child']>
 
+  let keyboard: KeyboardDevice
+  let mouse: MouseDevice
+  let gamepad: GamepadDevice
+  let touch: TouchDevice
+  let gyro: GyroDevice
+
   return {
     name: '@gwenjs/input',
     provides: { input: {} as InputService },
@@ -88,7 +99,27 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     setup(engine: GwenEngine) {
       log = engine.logger.child('@gwenjs/input')
 
-      // TODO Phase 2: attach device listeners (keyboard, mouse, gamepad, touch, gyro)
+      keyboard = new KeyboardDevice()
+      mouse = new MouseDevice()
+      gamepad = new GamepadDevice()
+      touch = new TouchDevice()
+      gyro = new GyroDevice(cfg.gyro.smoothing, cfg.gyro.deadZone)
+
+      if (typeof window !== 'undefined') {
+        keyboard.attach(cfg.eventTarget)
+        mouse.attach(cfg.eventTarget, cfg.canvas ?? undefined)
+        gamepad.attach(window)
+        touch.attach(cfg.eventTarget)
+        gyro.attach(window)
+
+        gamepad.onConnect = (padIndex) => {
+          engine.hooks.callHook('input:deviceChanged', 'gamepad', 'connected', padIndex)
+        }
+        gamepad.onDisconnect = (padIndex) => {
+          engine.hooks.callHook('input:deviceChanged', 'gamepad', 'disconnected', padIndex)
+        }
+      }
+
       // TODO Phase 5: create PlayerInput instances, engine.provide('player:N', ...)
       // TODO Phase 7: engine.provide('input', inputService)
 
@@ -96,8 +127,13 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     },
 
     onBeforeUpdate(_dt: number) {
-      // TODO Phase 2: flush all device snapshots
-      // keyboard.update(), mouse.update(), gamepad.update(), touch?.update(), gyro?.update()
+      if (typeof window !== 'undefined') {
+        keyboard.update()
+        mouse.update()
+        gamepad.update()
+        touch.update()
+        gyro.update()
+      }
     },
 
     onAfterUpdate() {
@@ -106,8 +142,13 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     },
 
     teardown() {
-      // TODO Phase 2: detach all event listeners
-      // keyboard.detach(), mouse.detach(), gyro?.detach(), touch?.detach()
+      if (typeof window !== 'undefined') {
+        keyboard.detach(cfg.eventTarget)
+        mouse.detach(cfg.eventTarget)
+        gamepad.detach(window)
+        touch.detach(cfg.eventTarget)
+        gyro.detach(window)
+      }
       log?.info('torn down')
     },
 

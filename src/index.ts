@@ -9,6 +9,7 @@ export type { InputPluginConfig, InputPluginHooks, VirtualJoystickConfig, Virtua
 export * from './actions/index.js'
 export * from './contexts/index.js'
 export * from './constants/index.js'
+export * from './devices/index.js'
 
 // Composables
 export { useInput } from './composables.js'

@@ -183,16 +183,13 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     },
 
     onBeforeUpdate(dt: number) {
-      if (typeof window !== 'undefined') {
-        keyboard?.update()
-        mouse?.update()
-        gamepad?.update()
-        touch?.update()
-        gyro?.update()
-      }
-      for (const player of players) {
-        player._updateFrame(dt)
-      }
+      if (typeof window === 'undefined') return
+      keyboard?.update()
+      mouse?.update()
+      gamepad?.update()
+      touch?.update()
+      gyro?.update()
+      for (const player of players) player._updateFrame(dt)
     },
 
     onAfterUpdate() {

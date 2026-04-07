@@ -143,8 +143,10 @@ export class PlayerInput {
       }
     }
 
-    // Collect all unique action refs from ALL registered contexts (not just active).
-    // This ensures pipelines update even when a context is temporarily inactive.
+    // Collect all unique action refs from every registered context so actions
+    // defined in currently-inactive contexts resolve to safe defaults.
+    // Note: inactive context bindings are NOT evaluated — their pipeline state
+    // freezes until the context is reactivated.
     const allActions = new Map<symbol, ActionRef<ActionType>>()
     for (const ctx of this._context.getAllRegistered()) {
       for (const entry of ctx.bindings) {
@@ -159,9 +161,7 @@ export class PlayerInput {
 
     const slot = this._deviceAssignment.slot
 
-    for (const [, ref] of allActions) {
-      const bindings = this._getActiveBindings(ref)
-
+    const evaluateAction = (ref: ActionRef<ActionType>, bindings: BindingEntry[]): void => {
       if (ref.type === 'button') {
         this._evaluateButtonBindings(ref, bindings, dt, slot)
       } else if (ref.type === 'axis1d') {
@@ -169,6 +169,20 @@ export class PlayerInput {
       } else {
         this._evaluateAxis2DBindings(ref, bindings, slot)
       }
+    }
+
+    // First pass: non-chording actions (safe to evaluate immediately)
+    for (const [, ref] of allActions) {
+      const bindings = this._getActiveBindings(ref)
+      const hasChordedWith = bindings.some(b => b.interactions.some(i => i._type === 'chordedwith'))
+      if (!hasChordedWith) evaluateAction(ref, bindings)
+    }
+
+    // Second pass: chording actions (depend on first-pass states being set)
+    for (const [, ref] of allActions) {
+      const bindings = this._getActiveBindings(ref)
+      const hasChordedWith = bindings.some(b => b.interactions.some(i => i._type === 'chordedwith'))
+      if (hasChordedWith) evaluateAction(ref, bindings)
     }
   }
 
@@ -308,6 +322,8 @@ export class PlayerInput {
    * Unknown action names or out-of-range indices are silently ignored.
    *
    * @param snapshot - The snapshot to restore.
+   * @remarks Action names must be unique across all registered contexts.
+   * If two actions share the same `.name` string, only the first-registered action will be matched.
    */
   importBindings(snapshot: BindingsSnapshot): void {
     this._bindingOverrides.clear()
@@ -400,11 +416,13 @@ export class PlayerInput {
       // AllOf: all specified keys must be held simultaneously
       for (const interaction of entry.interactions) {
         if (interaction._type === 'allof') {
-          const keys = interaction.keys as string[]
-          if (!keys.every(k => this._devices.keyboard.isPressed(k))) {
-            rawPressed = false
-            break
-          }
+          const keys = interaction.keys as Array<string | number>
+          const allPressed = keys.every(k =>
+            typeof k === 'number'
+              ? this._devices.gamepad.isButtonPressed(slot, k)
+              : this._devices.keyboard.isPressed(k)
+          )
+          if (!allPressed) { rawPressed = false; break }
         }
       }
 

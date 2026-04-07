@@ -172,6 +172,7 @@ export interface NormalizedInputConfig {
  *
  * @param config - Raw user config (may be empty `{}`).
  * @returns Fully resolved `NormalizedInputConfig`.
+ * @throws {Error} If `players` is not an integer between 1 and 4.
  */
 export function normalizeConfig(config: InputPluginConfig): NormalizedInputConfig {
   const players = config.players ?? 1
@@ -196,7 +197,11 @@ export function normalizeConfig(config: InputPluginConfig): NormalizedInputConfi
     contexts: config.contexts ?? [],
     defaultActiveContexts: config.defaultActiveContexts ?? null,
     canvas: config.canvas ?? null,
-    eventTarget: config.eventTarget ?? (typeof window !== 'undefined' ? window : ({} as EventTarget)),
+    eventTarget: config.eventTarget ?? (
+      typeof window !== 'undefined'
+        ? window
+        : (() => { throw new Error('[@gwenjs/input] No EventTarget available. Pass `eventTarget` explicitly in SSR/Node environments.') })()
+    ),
     touch: {
       enabled: config.touch?.enabled ?? true,
       forceVirtualControls: config.touch?.forceVirtualControls ?? null,

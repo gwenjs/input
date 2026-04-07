@@ -3,7 +3,7 @@ import './augment.js'
 
 // Plugin
 export { InputPlugin } from './plugin/index.js'
-export type { InputPluginConfig, InputPluginHooks } from './plugin/index.js'
+export type { InputPluginConfig, InputPluginHooks, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig } from './plugin/index.js'
 
 // DX APIs
 export * from './actions/index.js'

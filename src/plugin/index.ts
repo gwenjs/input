@@ -3,11 +3,11 @@
 // @ts-expect-error — workspace dep not yet installed; resolves in monorepo
 import { definePlugin } from '@gwenjs/kit/plugin'
 import type { GwenEngine } from '@gwenjs/core'
-import type { NormalizedInputConfig } from './config.js'
 import { normalizeConfig } from './config.js'
 import type { InputPluginConfig } from './config.js'
+import type { InputService } from '../types.js'
 
-export type { InputPluginConfig } from './config.js'
+export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig } from './config.js'
 
 /**
  * Runtime hooks added to `GwenRuntimeHooks` by `@gwenjs/input`.
@@ -77,14 +77,15 @@ export interface InputPluginHooks {
  * ```
  */
 export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
-  let cfg: NormalizedInputConfig
+  const cfg = normalizeConfig(opts)
   let log: ReturnType<GwenEngine['logger']['child']>
 
   return {
     name: '@gwenjs/input',
+    provides: { input: {} as InputService },
+    providesHooks: {} as InputPluginHooks,
 
     setup(engine: GwenEngine) {
-      cfg = normalizeConfig(opts)
       log = engine.logger.child('@gwenjs/input')
 
       // TODO Phase 2: attach device listeners (keyboard, mouse, gamepad, touch, gyro)
@@ -107,7 +108,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     teardown() {
       // TODO Phase 2: detach all event listeners
       // keyboard.detach(), mouse.detach(), gyro?.detach(), touch?.detach()
-      log.info('torn down')
+      log?.info('torn down')
     },
 
     onError(error: unknown, context: { phase: string; recover: () => void }) {

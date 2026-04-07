@@ -8,6 +8,7 @@ import type { GyroDevice } from '../devices/gyro.js'
 import type { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
 import type { InputRecorder } from '../recording/recorder.js'
 import type { InputPlayback } from '../recording/playback.js'
+import type { InputDebugAPI } from '../debug/debug-api.js'
 
 export interface InputServiceDevices {
   keyboard: KeyboardDevice
@@ -36,6 +37,8 @@ export class InputService {
   private readonly _devices: InputServiceDevices
   private readonly _recorder: InputRecorder
   private readonly _playback: InputPlayback
+  /** Set by the plugin in development mode; null in production. */
+  _debug: InputDebugAPI | null = null
 
   constructor(players: PlayerInput[], devices: InputServiceDevices, recorder: InputRecorder, playback: InputPlayback) {
     this._players = players
@@ -118,5 +121,24 @@ export class InputService {
    */
   get playback(): InputPlayback {
     return this._playback
+  }
+
+  /**
+   * The debug API instance.
+   *
+   * Returns `null` in production (`import.meta.env.PROD`) or before the
+   * plugin has finished setup. Use this to build devtools integrations,
+   * debug overlays, or automated input testing harnesses.
+   *
+   * @example
+   * ```typescript
+   * const debug = useInput().debug
+   * if (debug) {
+   *   debug.onFrame(snap => console.log(snap.players[0].actions))
+   * }
+   * ```
+   */
+  get debug(): InputDebugAPI | null {
+    return this._debug
   }
 }

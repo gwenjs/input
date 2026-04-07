@@ -16,8 +16,10 @@ import { VirtualControlsOverlay } from '../virtual/virtual-controls-overlay.js'
 import { InputRecorder } from '../recording/recorder.js'
 import { InputPlayback } from '../recording/playback.js'
 import type { InputRecording } from '../recording/types.js'
+import { InputDebugAPIImpl } from '../debug/debug-api.js'
+import { DevOverlay } from '../debug/dev-overlay.js'
 
-export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig } from './config.js'
+export type { InputPluginConfig, VirtualJoystickConfig, VirtualButtonConfig, DevOverlayConfig, NormalizedDevOverlayConfig } from './config.js'
 
 /**
  * Runtime hooks added to `GwenRuntimeHooks` by `@gwenjs/input`.
@@ -104,6 +106,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
   let playback: InputPlayback | undefined
   /** Absolute frame counter, incremented each frame during recording. */
   let recordingFrameIndex = 0
+
+  let debugAPI: InputDebugAPIImpl | null = null
+  let debugOverlay: DevOverlay | null = null
 
   return {
     name: '@gwenjs/input',
@@ -221,6 +226,28 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         playback_.play()
       }
 
+      // ── Debug API ────────────────────────────────────────────────────────
+      if (!import.meta.env.PROD) {
+        debugAPI = new InputDebugAPIImpl(
+          players,
+          {
+            keyboard: keyboard!,
+            mouse: mouse!,
+            gamepad: gamepad!,
+            touch: touch!,
+            gyro: gyro!,
+            virtualControls,
+          },
+          inputService,
+        )
+        inputService._debug = debugAPI
+
+        if (cfg.devOverlay && typeof window !== 'undefined') {
+          debugOverlay = new DevOverlay(debugAPI, cfg.devOverlay)
+          debugOverlay.attach()
+        }
+      }
+
       log.info('initialized', { players: cfg.players })
     },
 
@@ -238,7 +265,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
     onAfterUpdate() {
       // Capture recording frame after all players have updated.
-      recorder?._captureFrame(recordingFrameIndex++)
+      const frameIdx = recordingFrameIndex++
+      recorder?._captureFrame(frameIdx)
+      debugAPI?._tick(frameIdx)
     },
 
     teardown() {
@@ -250,6 +279,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         gyro?.detach(window)
         virtualControls?.detach()
       }
+      debugOverlay?.detach()
       log?.info('torn down')
     },
 

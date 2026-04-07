@@ -26,6 +26,19 @@ export * from './players/index.js'
 // Recording / playback
 export * from './recording/index.js'
 
+// Debug API
+export type {
+  InputDebugAPI,
+  InputDebugSnapshot,
+  ActionEvent,
+  BindingMapEntry,
+  ActionTriggeredEvent,
+  ContextChangedEvent,
+  BindingChangedEvent,
+  DeviceChangedEvent,
+  RecordingStateEvent,
+} from './debug/index.js'
+
 // Types
 export type * from './types.js'
 

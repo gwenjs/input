@@ -517,6 +517,21 @@ export class PlayerInput {
   // ── Recording / playback internals ──────────────────────────────────────────
 
   /**
+   * Returns all binding entries from every registered context, paired with
+   * their context name. Used by `InputDebugAPIImpl.getBindingMap()`.
+   * @internal
+   */
+  _getAllContextBindings(): Array<{ contextName: string; binding: BindingEntry }> {
+    const result: Array<{ contextName: string; binding: BindingEntry }> = []
+    for (const ctx of this._context.getAllRegistered()) {
+      for (const entry of ctx.bindings) {
+        result.push({ contextName: ctx.name, binding: entry })
+      }
+    }
+    return result
+  }
+
+  /**
    * Returns all action refs currently registered across all of this player's
    * input contexts, keyed by `ActionRef.id`.
    *

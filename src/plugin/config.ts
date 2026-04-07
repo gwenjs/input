@@ -34,10 +34,34 @@ export interface VirtualButtonConfig {
 
 /** Dev overlay configuration. */
 export interface DevOverlayConfig {
-  /** Overlay screen position. Default: 'bottom-right'. */
+  /** Overlay screen position. Default: `'bottom-right'`. */
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
-  /** Overlay opacity (0–1). Default: 0.85. */
+  /** Show connected/disconnected status for each device class. Default: `true`. */
+  showDevices?: boolean
+  /** Show the active context list for the configured player. Default: `true`. */
+  showContexts?: boolean
+  /** Show non-zero action values for the configured player. Default: `true`. */
+  showActions?: boolean
+  /** Show recording/playback state and frame counter. Default: `true`. */
+  showRecording?: boolean
+  /** Overlay opacity (0–1). Default: `0.85`. */
   opacity?: number
+  /** Which player slot to display. Default: `0`. */
+  player?: number
+}
+
+/**
+ * Fully-resolved dev overlay config — all fields are required.
+ * Produced by `normalizeConfig()` from a `DevOverlayConfig` or `true`.
+ */
+export interface NormalizedDevOverlayConfig {
+  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  showDevices: boolean
+  showContexts: boolean
+  showActions: boolean
+  showRecording: boolean
+  opacity: number
+  player: number
 }
 
 /** Accessibility profile — a named BindingsSnapshot preset. */
@@ -150,7 +174,7 @@ export interface NormalizedInputConfig {
     smoothing: number
     deadZone: number
   }
-  devOverlay: false | DevOverlayConfig
+  devOverlay: false | NormalizedDevOverlayConfig
   recording: InputRecording | null
   accessibilityProfiles: Record<string, AccessibilityProfile>
   onBindingsChanged: ((playerIndex: number, snapshot: BindingsSnapshot) => void) | null
@@ -177,13 +201,26 @@ export function normalizeConfig(config: InputPluginConfig): NormalizedInputConfi
     )
   }
 
-  let devOverlay: false | DevOverlayConfig = false
+  let devOverlay: false | NormalizedDevOverlayConfig = false
   if (config.devOverlay === true) {
-    devOverlay = { position: 'bottom-right', opacity: 0.85 }
+    devOverlay = {
+      position: 'bottom-right',
+      showDevices: true,
+      showContexts: true,
+      showActions: true,
+      showRecording: true,
+      opacity: 0.85,
+      player: 0,
+    }
   } else if (config.devOverlay && typeof config.devOverlay === 'object') {
     devOverlay = {
       position: config.devOverlay.position ?? 'bottom-right',
+      showDevices: config.devOverlay.showDevices ?? true,
+      showContexts: config.devOverlay.showContexts ?? true,
+      showActions: config.devOverlay.showActions ?? true,
+      showRecording: config.devOverlay.showRecording ?? true,
       opacity: config.devOverlay.opacity ?? 0.85,
+      player: config.devOverlay.player ?? 0,
     }
   }
 

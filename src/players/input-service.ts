@@ -12,6 +12,12 @@ import type { InputPlayback } from "../recording/playback.js";
 import type { InputDebugAPI } from "../debug/debug-api.js";
 import type { BindingsSnapshot } from "./bindings-snapshot.js";
 
+/** iOS 13+ DeviceOrientationEvent.requestPermission — absent from standard DOM types. */
+interface IOSDeviceOrientationEventConstructor {
+  new (...args: unknown[]): DeviceOrientationEvent;
+  requestPermission(): Promise<"granted" | "denied">;
+}
+
 export interface InputServiceDevices {
   keyboard: KeyboardDevice;
   mouse: MouseDevice;
@@ -188,13 +194,16 @@ export class InputService {
    * ```
    */
   async requestMotionPermission(): Promise<"granted" | "denied" | "unavailable"> {
-    // Access via window to avoid ReferenceError in environments where the API doesn't exist.
-    // DeviceOrientationEvent.requestPermission is iOS 13+ only.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const doe = (typeof window !== "undefined" ? (window as any).DeviceOrientationEvent : undefined) as any;
+    // DeviceOrientationEvent.requestPermission is iOS 13+ only and absent from DOM types.
+    const doe =
+      typeof window !== "undefined"
+        ? (window.DeviceOrientationEvent as unknown as
+            | IOSDeviceOrientationEventConstructor
+            | undefined)
+        : undefined;
     if (typeof doe?.requestPermission === "function") {
       try {
-        const result: string = await doe.requestPermission();
+        const result = await doe.requestPermission();
         if (result === "granted") {
           this._devices.gyro.attach(window);
           this._log?.info("[@gwenjs/input] motion permission granted (iOS)");

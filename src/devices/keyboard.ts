@@ -15,24 +15,19 @@
  */
 
 import type { InputDevice } from "./index.js";
+import { ButtonStateMachine } from "./button-state-machine.js";
 
 export type KeyState = "idle" | "justPressed" | "held" | "justReleased";
 
 export class KeyboardDevice implements InputDevice {
-  private states = new Map<string, KeyState>();
-  private pendingDown = new Set<string>();
-  private pendingUp = new Set<string>();
+  private machine = new ButtonStateMachine<string>();
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    const key = e.code;
-    const current = this.states.get(key);
-    if (!current || current === "idle" || current === "justReleased") {
-      this.pendingDown.add(key);
-    }
+    this.machine.press(e.code);
   };
 
   private onKeyUp = (e: KeyboardEvent): void => {
-    this.pendingUp.add(e.code);
+    this.machine.release(e.code);
   };
 
   private onBlur = (): void => {
@@ -59,39 +54,12 @@ export class KeyboardDevice implements InputDevice {
 
   /** Advance key states to the next frame. Must be called in `onBeforeUpdate()`. */
   update(): void {
-    for (const [key, state] of this.states) {
-      if (state === "justReleased") {
-        this.states.set(key, "idle");
-      } else if (state === "justPressed" || state === "held") {
-        if (!this.pendingUp.has(key)) {
-          this.states.set(key, "held");
-        }
-      }
-    }
-
-    for (const key of this.pendingDown) {
-      this.states.set(key, "justPressed");
-    }
-    this.pendingDown.clear();
-
-    for (const key of this.pendingUp) {
-      const current = this.states.get(key);
-      if (current === "justPressed" || current === "held") {
-        this.states.set(key, "justReleased");
-      } else {
-        this.states.set(key, "idle");
-      }
-    }
-    this.pendingUp.clear();
+    this.machine.update();
   }
 
   /** Reset all key states to idle. Call when the window loses focus. */
   reset(): void {
-    for (const key of this.states.keys()) {
-      this.states.set(key, "idle");
-    }
-    this.pendingDown.clear();
-    this.pendingUp.clear();
+    this.machine.reset();
   }
 
   /**
@@ -99,7 +67,7 @@ export class KeyboardDevice implements InputDevice {
    * @param key Key code (e.g. `'Space'`, `'KeyW'`, `'ArrowUp'`)
    */
   getState(key: string): KeyState {
-    return this.states.get(key) ?? "idle";
+    return this.machine.getState(key);
   }
 
   /**
@@ -107,7 +75,7 @@ export class KeyboardDevice implements InputDevice {
    * @param key Key code
    */
   isJustPressed(key: string): boolean {
-    return this.states.get(key) === "justPressed";
+    return this.machine.getState(key) === "justPressed";
   }
 
   /**
@@ -115,7 +83,7 @@ export class KeyboardDevice implements InputDevice {
    * @param key Key code
    */
   isPressed(key: string): boolean {
-    const s = this.states.get(key);
+    const s = this.machine.getState(key);
     return s === "justPressed" || s === "held";
   }
 
@@ -124,7 +92,7 @@ export class KeyboardDevice implements InputDevice {
    * @param key Key code
    */
   isHeld(key: string): boolean {
-    return this.states.get(key) === "held";
+    return this.machine.getState(key) === "held";
   }
 
   /**
@@ -132,7 +100,7 @@ export class KeyboardDevice implements InputDevice {
    * @param key Key code
    */
   isJustReleased(key: string): boolean {
-    return this.states.get(key) === "justReleased";
+    return this.machine.getState(key) === "justReleased";
   }
 
   /**
@@ -140,10 +108,6 @@ export class KeyboardDevice implements InputDevice {
    * Used by `captureNextInput` to detect the first key press.
    */
   getJustPressedKeys(): string[] {
-    const keys: string[] = [];
-    for (const [key, state] of this.states) {
-      if (state === "justPressed") keys.push(key);
-    }
-    return keys;
+    return this.machine.getJustPressed();
   }
 }

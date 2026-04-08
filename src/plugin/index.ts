@@ -126,6 +126,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
     setup(engine: GwenEngine) {
       log = engine.logger.child("@gwenjs/input");
+      // `provide()` is part of the GWEN engine runtime but not yet reflected in the
+      // public GwenEngine type. Cast once here rather than at every call site.
+      const eng = engine as GwenEngine & { provide(key: string, value: unknown): void };
 
       keyboard = new KeyboardDevice();
       mouse = new MouseDevice();
@@ -133,34 +136,47 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
       touch = new TouchDevice();
       gyro = new GyroDevice(cfg.gyro.smoothing, cfg.gyro.deadZone);
 
-      if (typeof window !== "undefined") {
-        keyboard.attach(cfg.eventTarget);
-        mouse.attach(cfg.eventTarget, cfg.canvas ?? undefined);
-        gamepad.attach(window);
-        touch.attach(cfg.eventTarget, cfg.canvas ?? undefined);
-        gyro.attach(window);
+      try {
+        if (typeof window !== "undefined") {
+          keyboard.attach(cfg.eventTarget);
+          mouse.attach(cfg.eventTarget, cfg.canvas ?? undefined);
+          gamepad.attach(window);
+          touch.attach(cfg.eventTarget, cfg.canvas ?? undefined);
+          gyro.attach(window);
 
-        gamepad.onConnect = (padIndex) => {
-          engine.hooks.callHook("input:deviceChanged", "gamepad", "connected", padIndex);
-        };
-        gamepad.onDisconnect = (padIndex) => {
-          engine.hooks.callHook("input:deviceChanged", "gamepad", "disconnected", padIndex);
-        };
+          gamepad.onConnect = (padIndex) => {
+            engine.hooks.callHook("input:deviceChanged", "gamepad", "connected", padIndex);
+          };
+          gamepad.onDisconnect = (padIndex) => {
+            engine.hooks.callHook("input:deviceChanged", "gamepad", "disconnected", padIndex);
+          };
 
-        // ── Virtual controls overlay ───────────────────────────────────────
-        if (
-          cfg.touch.enabled &&
-          (cfg.touch.virtualJoysticks.length > 0 || cfg.touch.virtualButtons.length > 0)
-        ) {
-          virtualControls = new VirtualControlsOverlay(cfg.touch.forceVirtualControls);
-          for (const jsCfg of cfg.touch.virtualJoysticks) {
-            virtualControls.addJoystick(jsCfg);
+          // ── Virtual controls overlay ─────────────────────────────────────
+          if (
+            cfg.touch.enabled &&
+            (cfg.touch.virtualJoysticks.length > 0 || cfg.touch.virtualButtons.length > 0)
+          ) {
+            virtualControls = new VirtualControlsOverlay(cfg.touch.forceVirtualControls);
+            for (const jsCfg of cfg.touch.virtualJoysticks) {
+              virtualControls.addJoystick(jsCfg);
+            }
+            for (const btnCfg of cfg.touch.virtualButtons) {
+              virtualControls.addButton(btnCfg);
+            }
+            virtualControls.attach();
           }
-          for (const btnCfg of cfg.touch.virtualButtons) {
-            virtualControls.addButton(btnCfg);
-          }
-          virtualControls.attach();
         }
+      } catch (err) {
+        // Ensure no listeners leak if setup fails after partial attachment.
+        if (typeof window !== "undefined") {
+          keyboard?.detach(cfg.eventTarget);
+          mouse?.detach(cfg.eventTarget);
+          gamepad?.detach(window);
+          touch?.detach(cfg.eventTarget);
+          gyro?.detach(window);
+          virtualControls?.detach();
+        }
+        throw err;
       }
 
       // ── Create PlayerInput instances ─────────────────────────────────────
@@ -227,8 +243,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         }
 
         players.push(player);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (engine as any).provide(`player:${i}`, player);
+        eng.provide(`player:${i}`, player);
       }
 
       const recorder_ = new InputRecorder(players);
@@ -258,8 +273,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         recorder_,
         playback_,
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (engine as any).provide("input", inputService);
+      eng.provide("input", inputService);
 
       // Provide logger to the service.
       inputService._log = log;

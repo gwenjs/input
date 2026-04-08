@@ -979,3 +979,91 @@ describe("GyroDevice — calibration and extended APIs", () => {
     expect(gyro.orientation.yaw).toBeCloseTo(90, 0);
   });
 });
+
+// ─── ButtonStateMachine ───────────────────────────────────────────────────────
+
+import { ButtonStateMachine } from "../src/devices/button-state-machine.js";
+
+describe("ButtonStateMachine", () => {
+  it("returns idle for unknown keys", () => {
+    const m = new ButtonStateMachine<string>();
+    expect(m.getState("Space")).toBe("idle");
+  });
+
+  it("transitions idle → justPressed on first press", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.update();
+    expect(m.getState("Space")).toBe("justPressed");
+  });
+
+  it("transitions justPressed → held on next update without release", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.update();
+    m.update();
+    expect(m.getState("Space")).toBe("held");
+  });
+
+  it("transitions held → justReleased on release", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.update();
+    m.update();
+    m.release("Space");
+    m.update();
+    expect(m.getState("Space")).toBe("justReleased");
+  });
+
+  it("transitions justReleased → idle on next update", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.update();
+    m.release("Space");
+    m.update();
+    m.update();
+    expect(m.getState("Space")).toBe("idle");
+  });
+
+  it("ignores duplicate press while held", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.update();
+    m.update(); // now held
+    m.press("Space"); // duplicate — should not reset to justPressed
+    m.update();
+    expect(m.getState("Space")).toBe("held");
+  });
+
+  it("getJustPressed() returns only justPressed keys", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.press("KeyA");
+    m.update();
+    expect(m.getJustPressed()).toContain("Space");
+    expect(m.getJustPressed()).toContain("KeyA");
+    m.update(); // both become held
+    expect(m.getJustPressed()).toHaveLength(0);
+  });
+
+  it("reset() sets all states to idle", () => {
+    const m = new ButtonStateMachine<string>();
+    m.press("Space");
+    m.update();
+    m.reset();
+    expect(m.getState("Space")).toBe("idle");
+    expect(m.getJustPressed()).toHaveLength(0);
+  });
+
+  it("works with numeric keys (MouseDevice-style)", () => {
+    const m = new ButtonStateMachine<number>();
+    m.press(0); // left button
+    m.update();
+    expect(m.getState(0)).toBe("justPressed");
+    m.update();
+    expect(m.getState(0)).toBe("held");
+    m.release(0);
+    m.update();
+    expect(m.getState(0)).toBe("justReleased");
+  });
+});

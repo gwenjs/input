@@ -35,6 +35,12 @@ export class GamepadDevice implements InputDevice {
     this.onDisconnect?.(e.gamepad.index);
   };
 
+  /**
+   * @param deadzone - Neutral zone threshold applied to axis values.
+   * Values with `|raw| ≤ deadzone` are returned as 0 to filter controller drift.
+   * Default 0.15 is a reasonable middle ground across common gamepads (Xbox: ~0.10,
+   * PlayStation: ~0.15, Switch Pro: ~0.08). Override via `InputPlugin({ gamepad: { deadzone } })`.
+   */
   constructor(private deadzone = 0.15) {}
 
   /**
@@ -128,7 +134,14 @@ export class GamepadDevice implements InputDevice {
    * @param axisIndex Axis index
    */
   getAxis(padIndex: number, axisIndex: number): number {
-    const raw = this.snapshot[padIndex]?.axes[axisIndex] ?? 0;
+    const pad = this.snapshot[padIndex];
+    if (pad && axisIndex >= pad.axes.length) {
+      // Warn once-ish — callers should guard against stale axis counts.
+      console.warn(
+        `[@gwenjs/input] GamepadDevice.getAxis: axisIndex ${axisIndex} out of range for pad ${padIndex} (${pad.axes.length} axes)`,
+      );
+    }
+    const raw = pad?.axes[axisIndex] ?? 0;
     return Math.abs(raw) > this.deadzone ? raw : 0;
   }
 

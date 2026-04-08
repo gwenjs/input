@@ -1211,3 +1211,24 @@ describe("InputPlayback — onComplete unsubscribe", () => {
     expect(cb).toHaveBeenCalled();
   });
 });
+
+
+// ─── InputPlayback - seek on empty recording ─────────────────────────────────
+
+describe("InputPlayback - seek on empty recording", () => {
+  it("seek() is a no-op when frameCount is 0", () => {
+    const { player } = makePlayer();
+    const playback = new InputPlayback([player]);
+    const emptyRecording: InputRecording = {
+      version: 1,
+      frameCount: 0,
+      targetFps: 60,
+      playerCount: 1,
+      actionNames: [],
+      frames: [],
+    };
+    playback.load(emptyRecording);
+    expect(() => playback.seek(0)).not.toThrow();
+    expect(() => playback.seek(5)).not.toThrow();
+  });
+});

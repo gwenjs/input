@@ -1895,3 +1895,76 @@ describe("PlayerInput — getRemappableActions display names", () => {
     expect(action.bindings[0].displayName).toBe("[object Object]");
   });
 });
+
+// ─── importBindings — validation (T5: prototype pollution guard) ──────────────
+
+describe("PlayerInput.importBindings — snapshot validation", () => {
+  const Jump = defineAction("Jump", { type: "button" });
+  const ctx = defineInputContext("game", {
+    bindings: [bind(Jump, "Space")],
+  });
+
+  function makeValidatedPlayer() {
+    const keyboard = new KeyboardDevice();
+    const devices = {
+      keyboard,
+      mouse: new MouseDevice(),
+      gamepad: new GamepadDevice(),
+      touch: new TouchDevice(),
+      gyro: new GyroDevice(),
+    };
+    const context = new InputContext();
+    context.register(ctx);
+    context.activate("game");
+    const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const player = new PlayerInput(0, context, devices, { type: "keyboard+mouse", slot: 0 });
+    player._log = log;
+    return { player, log };
+  }
+
+  it("silently ignores and warns when snapshot is null", () => {
+    const { player, log } = makeValidatedPlayer();
+    player.importBindings(null as any);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("invalid snapshot"));
+  });
+
+  it("silently ignores and warns when version is wrong", () => {
+    const { player, log } = makeValidatedPlayer();
+    player.importBindings({ version: 2, player: 0, overrides: [] } as any);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("invalid snapshot"));
+  });
+
+  it("silently ignores and warns when overrides is not an array", () => {
+    const { player, log } = makeValidatedPlayer();
+    player.importBindings({ version: 1, player: 0, overrides: "bad" } as any);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("invalid snapshot"));
+  });
+
+  it("skips and warns on malformed override entries", () => {
+    const { player, log } = makeValidatedPlayer();
+    player.importBindings({
+      version: 1,
+      player: 0,
+      overrides: [{ actionId: 123, bindingIndex: 0, newBinding: "Space" }] as any,
+    });
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("malformed override"));
+  });
+
+  it("skips override with null newBinding", () => {
+    const { player, log } = makeValidatedPlayer();
+    player.importBindings({
+      version: 1,
+      player: 0,
+      overrides: [{ actionId: "Jump", bindingIndex: 0, newBinding: null }] as any,
+    });
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("malformed override"));
+  });
+
+  it("applies valid overrides normally", () => {
+    const { player } = makeValidatedPlayer();
+    player.importBindings({ version: 1, player: 0, overrides: [{ actionId: "Jump", bindingIndex: 0, newBinding: "KeyZ" }] });
+    const remappable = player.getRemappableActions();
+    const jumpAction = remappable.find((a) => a.name === "Jump");
+    expect(jumpAction?.bindings[0].source).toBe("KeyZ");
+  });
+});

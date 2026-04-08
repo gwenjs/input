@@ -144,6 +144,7 @@ export class InputPlayback {
     if (!this._recording) {
       throw new Error("[@gwenjs/input] InputPlayback.seek(): no recording loaded");
     }
+    if (this._recording.frameCount === 0) return;
 
     const clamped = Math.max(0, Math.min(frameIndex, this._recording.frameCount - 1));
     this._framePosition = clamped;

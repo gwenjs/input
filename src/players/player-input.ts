@@ -171,7 +171,15 @@ export class PlayerInput {
 
   /**
    * Activates a registered input context by name for this player.
+   *
+   * @param name - The context name as defined in `defineInputContext({ name })`.
    * @throws {Error} If the context was never registered.
+   *
+   * @example
+   * ```typescript
+   * player.activateContext('gameplay')
+   * player.activateContext('ui-pause-menu')
+   * ```
    */
   activateContext(name: string): void {
     try {
@@ -186,7 +194,14 @@ export class PlayerInput {
   }
 
   /**
-   * Deactivates an input context by name. No-op if not active.
+   * Deactivates an input context by name. No-op if not currently active.
+   *
+   * @param name - The context name to deactivate.
+   *
+   * @example
+   * ```typescript
+   * player.deactivateContext('ui-pause-menu')
+   * ```
    */
   deactivateContext(name: string): void {
     this._context.deactivate(name);
@@ -387,7 +402,12 @@ export class PlayerInput {
   rebind(action: ActionRef<ActionType>, bindingIndex: number, newSource: BindingSource): void {
     const bindings = this._context.getBindingsForAction(action);
     const original = bindings[bindingIndex];
-    if (!original) return;
+    if (!original) {
+      this._log?.warn(
+        `[@gwenjs/input] player ${this.index}: rebind — bindingIndex ${bindingIndex} out of range for action "${action.name}" (${bindings.length} binding(s))`,
+      );
+      return;
+    }
 
     const newEntry: BindingEntry = { ...original, source: newSource };
     this._setOverride(action.id, bindingIndex, newEntry);
@@ -410,6 +430,12 @@ export class PlayerInput {
 
   /**
    * Removes all binding overrides for this player, restoring all defaults.
+   *
+   * @example
+   * ```typescript
+   * // Reset all custom bindings back to defaults
+   * player.resetBindings()
+   * ```
    */
   resetBindings(): void {
     this._bindingOverrides.clear();
@@ -478,6 +504,15 @@ export class PlayerInput {
    * If two actions share the same `.name` string, only the first-registered action will be matched.
    */
   importBindings(snapshot: BindingsSnapshot): void {
+    // Validate snapshot shape to guard against malformed or adversarial data
+    // (e.g. from localStorage or network).
+    if (!snapshot || snapshot.version !== 1 || !Array.isArray(snapshot.overrides)) {
+      this._log?.warn(
+        `[@gwenjs/input] player ${this.index}: importBindings — invalid snapshot structure, ignoring`,
+      );
+      return;
+    }
+
     this._bindingOverrides.clear();
 
     // Build a name→ActionRef lookup from all registered contexts
@@ -490,7 +525,21 @@ export class PlayerInput {
       }
     }
 
-    for (const { actionId, bindingIndex, newBinding } of snapshot.overrides) {
+    for (const override of snapshot.overrides) {
+      if (
+        !override ||
+        typeof override.actionId !== "string" ||
+        typeof override.bindingIndex !== "number" ||
+        override.newBinding === null ||
+        override.newBinding === undefined
+      ) {
+        this._log?.warn(
+          `[@gwenjs/input] player ${this.index}: importBindings — malformed override entry, skipping`,
+        );
+        continue;
+      }
+
+      const { actionId, bindingIndex, newBinding } = override;
       const actionRef = actionsByName.get(actionId);
       if (!actionRef) {
         this._log?.warn(
@@ -505,7 +554,7 @@ export class PlayerInput {
 
       const newEntry: BindingEntry = {
         ...original,
-        source: newBinding as BindingSource,
+        source: newBinding,
       };
       this._setOverride(actionRef.id, bindingIndex, newEntry);
     }

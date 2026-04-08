@@ -12,6 +12,7 @@
  */
 
 import type { InputDevice } from "./index.js";
+import { ButtonStateMachine } from "./button-state-machine.js";
 
 export type MouseButtonState = "idle" | "justPressed" | "held" | "justReleased";
 
@@ -27,9 +28,7 @@ export interface MousePosition {
 }
 
 export class MouseDevice implements InputDevice {
-  private buttonStates = new Map<number, MouseButtonState>();
-  private pendingDown = new Set<number>();
-  private pendingUp = new Set<number>();
+  private buttons = new ButtonStateMachine<number>();
 
   private _position: MousePosition = { x: 0, y: 0, screenX: 0, screenY: 0 };
   private _deltaX = 0;
@@ -40,16 +39,15 @@ export class MouseDevice implements InputDevice {
   private _wheelAccumulator = 0;
 
   private canvas: HTMLCanvasElement | null = null;
-  private cachedRect: DOMRect | null = null;
 
   private onMouseMove = (e: MouseEvent): void => {
     this._position.screenX = e.clientX;
     this._position.screenY = e.clientY;
 
     if (this.canvas) {
-      if (!this.cachedRect) this.cachedRect = this.canvas.getBoundingClientRect();
-      this._position.x = e.clientX - this.cachedRect.left;
-      this._position.y = e.clientY - this.cachedRect.top;
+      const rect = this.canvas.getBoundingClientRect();
+      this._position.x = e.clientX - rect.left;
+      this._position.y = e.clientY - rect.top;
     } else {
       this._position.x = e.clientX;
       this._position.y = e.clientY;
@@ -60,23 +58,15 @@ export class MouseDevice implements InputDevice {
   };
 
   private onMouseDown = (e: MouseEvent): void => {
-    const btn = e.button;
-    const current = this.buttonStates.get(btn);
-    if (!current || current === "idle" || current === "justReleased") {
-      this.pendingDown.add(btn);
-    }
+    this.buttons.press(e.button);
   };
 
   private onMouseUp = (e: MouseEvent): void => {
-    this.pendingUp.add(e.button);
+    this.buttons.release(e.button);
   };
 
   private onWheel = (e: WheelEvent): void => {
     this._wheelAccumulator += Math.sign(e.deltaY);
-  };
-
-  private onResize = (): void => {
-    this.cachedRect = null;
   };
 
   private onBlur = (): void => {
@@ -90,13 +80,11 @@ export class MouseDevice implements InputDevice {
    */
   attach(target: EventTarget, canvas?: HTMLCanvasElement): void {
     this.canvas = canvas ?? null;
-    this.cachedRect = null;
     target.addEventListener("mousemove", this.onMouseMove as EventListener);
     target.addEventListener("mousedown", this.onMouseDown as EventListener);
     target.addEventListener("mouseup", this.onMouseUp as EventListener);
     target.addEventListener("wheel", this.onWheel as EventListener, { passive: true });
     if (typeof window !== "undefined") {
-      window.addEventListener("resize", this.onResize);
       window.addEventListener("blur", this.onBlur);
     }
   }
@@ -108,37 +96,13 @@ export class MouseDevice implements InputDevice {
     target.removeEventListener("mouseup", this.onMouseUp as EventListener);
     target.removeEventListener("wheel", this.onWheel as EventListener);
     if (typeof window !== "undefined") {
-      window.removeEventListener("resize", this.onResize);
       window.removeEventListener("blur", this.onBlur);
     }
   }
 
   /** Advance button states and snapshot delta/wheel for this frame. Must be called in `onBeforeUpdate()`. */
   update(): void {
-    for (const [btn, state] of this.buttonStates) {
-      if (state === "justReleased") {
-        this.buttonStates.set(btn, "idle");
-      } else if (state === "justPressed" || state === "held") {
-        if (!this.pendingUp.has(btn)) {
-          this.buttonStates.set(btn, "held");
-        }
-      }
-    }
-
-    for (const btn of this.pendingDown) {
-      this.buttonStates.set(btn, "justPressed");
-    }
-    this.pendingDown.clear();
-
-    for (const btn of this.pendingUp) {
-      const current = this.buttonStates.get(btn);
-      if (current === "justPressed" || current === "held") {
-        this.buttonStates.set(btn, "justReleased");
-      } else {
-        this.buttonStates.set(btn, "idle");
-      }
-    }
-    this.pendingUp.clear();
+    this.buttons.update();
 
     this._deltaX = this._deltaXFrame;
     this._deltaY = this._deltaYFrame;
@@ -151,11 +115,7 @@ export class MouseDevice implements InputDevice {
 
   /** Reset all button states, delta, and wheel to zero. */
   reset(): void {
-    for (const btn of this.buttonStates.keys()) {
-      this.buttonStates.set(btn, "idle");
-    }
-    this.pendingDown.clear();
-    this.pendingUp.clear();
+    this.buttons.reset();
     this._deltaX = 0;
     this._deltaY = 0;
     this._deltaXFrame = 0;
@@ -187,7 +147,7 @@ export class MouseDevice implements InputDevice {
    * @param btn Button index (0 = left, 1 = middle, 2 = right)
    */
   getButtonState(btn: number): MouseButtonState {
-    return this.buttonStates.get(btn) ?? "idle";
+    return this.buttons.getState(btn);
   }
 
   /**
@@ -195,7 +155,7 @@ export class MouseDevice implements InputDevice {
    * @param btn Button index
    */
   isButtonJustPressed(btn: number): boolean {
-    return this.buttonStates.get(btn) === "justPressed";
+    return this.buttons.getState(btn) === "justPressed";
   }
 
   /**
@@ -203,7 +163,7 @@ export class MouseDevice implements InputDevice {
    * @param btn Button index
    */
   isButtonPressed(btn: number): boolean {
-    const s = this.buttonStates.get(btn);
+    const s = this.buttons.getState(btn);
     return s === "justPressed" || s === "held";
   }
 
@@ -212,7 +172,7 @@ export class MouseDevice implements InputDevice {
    * @param btn Button index
    */
   isButtonJustReleased(btn: number): boolean {
-    return this.buttonStates.get(btn) === "justReleased";
+    return this.buttons.getState(btn) === "justReleased";
   }
 
   /**
@@ -220,10 +180,6 @@ export class MouseDevice implements InputDevice {
    * Used by `captureNextInput` to detect the first mouse button press.
    */
   getJustPressedButtons(): number[] {
-    const btns: number[] = [];
-    for (const [btn, state] of this.buttonStates) {
-      if (state === "justPressed") btns.push(btn);
-    }
-    return btns;
+    return this.buttons.getJustPressed();
   }
 }

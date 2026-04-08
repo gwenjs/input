@@ -28,7 +28,7 @@ export default defineConfig({
       fileName: (_format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
-      external: ['@gwenjs/core', '@gwenjs/kit'],
+      external: (id) => id === '@gwenjs/core' || id === '@gwenjs/kit' || id.startsWith('@gwenjs/kit/'),
     },
   },
 })

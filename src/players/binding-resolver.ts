@@ -82,7 +82,7 @@ export function resolveSource(
 
       // Gyro rotation rate (2D — beta = forward/back tilt rate, gamma = left/right)
       case "gyro:rotation-rate":
-        return { x: devices.gyro.velocity.beta, y: devices.gyro.velocity.gamma };
+        return { x: devices.gyro.rotationRate.beta, y: devices.gyro.rotationRate.gamma };
 
       // Everything else: treat as a keyboard key code
       default:
@@ -132,7 +132,7 @@ export function resolveSource(
       case "gyro:yaw":
         return devices.gyro.orientation.yaw;
       case "gyro:rotation-rate":
-        return { x: devices.gyro.velocity.beta, y: devices.gyro.velocity.gamma };
+        return { x: devices.gyro.rotationRate.beta, y: devices.gyro.rotationRate.gamma };
 
       // Touch gesture sources
       case "gesture:tap":

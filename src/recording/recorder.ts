@@ -63,6 +63,13 @@ export class InputRecorder {
     return this._frameCount;
   }
 
+  /**
+   * Called by the plugin to emit the `input:recordingState` engine hook.
+   * Set during plugin setup.
+   * @internal
+   */
+  _onStateChanged: ((state: "started" | "stopped") => void) | undefined;
+
   // ── Recording lifecycle ─────────────────────────────────────────────────────
 
   /**
@@ -99,6 +106,7 @@ export class InputRecorder {
     this._prevValues = this._players.map(() => new Map<number, InputRecordingChangeValue>());
 
     this._state = "recording";
+    this._onStateChanged?.("started");
   }
 
   /**
@@ -108,6 +116,7 @@ export class InputRecorder {
   stop(): void {
     if (this._state === "recording") {
       this._state = "idle";
+      this._onStateChanged?.("stopped");
     }
   }
 

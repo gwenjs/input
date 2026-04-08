@@ -9,6 +9,7 @@ import type { VirtualControlsOverlay } from "../virtual/virtual-controls-overlay
 import type { InputRecorder } from "../recording/recorder.js";
 import type { InputPlayback } from "../recording/playback.js";
 import type { InputDebugAPI } from "../debug/debug-api.js";
+import type { BindingsSnapshot } from "./bindings-snapshot.js";
 
 export interface InputServiceDevices {
   keyboard: KeyboardDevice;
@@ -37,6 +38,8 @@ export class InputService {
   private readonly _devices: InputServiceDevices;
   private readonly _recorder: InputRecorder;
   private readonly _playback: InputPlayback;
+  /** Named accessibility profiles available to all players. Set by the plugin. */
+  _accessibilityProfiles: Record<string, BindingsSnapshot> = {};
   /** Set by the plugin in development mode; null in production. */
   _debug: InputDebugAPI | null = null;
 
@@ -145,5 +148,59 @@ export class InputService {
    */
   get debug(): InputDebugAPI | null {
     return this._debug;
+  }
+
+  /**
+   * Returns the names of all registered accessibility profiles.
+   *
+   * Profiles are registered via `InputPlugin({ accessibilityProfiles: { ... } })`.
+   * Activate a profile for a player via `player.activateAccessibilityProfile(name)`.
+   *
+   * @returns An array of profile name strings.
+   */
+  getAccessibilityProfiles(): string[] {
+    return Object.keys(this._accessibilityProfiles);
+  }
+
+  /**
+   * Requests iOS 13+ motion permission for the gyroscope.
+   *
+   * Must be called from a user gesture handler (e.g. a button click).
+   * Calling from `onUpdate()` or autostart will fail silently on iOS.
+   *
+   * On platforms that do not require an explicit permission grant, this
+   * resolves immediately with `'granted'`.
+   *
+   * @returns `'granted'` | `'denied'` | `'unavailable'`
+   *
+   * @example
+   * ```typescript
+   * button.onclick = async () => {
+   *   const result = await useInput().requestMotionPermission()
+   *   if (result === 'granted') enableGyroAim()
+   * }
+   * ```
+   */
+  async requestMotionPermission(): Promise<"granted" | "denied" | "unavailable"> {
+    // DeviceOrientationEvent.requestPermission is iOS 13+ only.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const doe = DeviceOrientationEvent as any;
+    if (typeof doe?.requestPermission === "function") {
+      try {
+        const result: string = await doe.requestPermission();
+        if (result === "granted") {
+          this._devices.gyro.attach(window);
+          return "granted";
+        }
+        return "denied";
+      } catch {
+        return "denied";
+      }
+    }
+    // Non-iOS or API not present — permission not required.
+    if (typeof window !== "undefined" && "DeviceOrientationEvent" in window) {
+      return "granted";
+    }
+    return "unavailable";
   }
 }

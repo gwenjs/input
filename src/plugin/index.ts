@@ -203,6 +203,21 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
         const player = new PlayerInput(i, ctx, deviceSet, assignment, bindingsChangedCb);
 
+        // Wire engine hooks for context activation/deactivation and binding changes.
+        const playerIdx = i;
+        player._onHookContextActivated = (name, priority) => {
+          engine.hooks.callHook("input:contextActivated", name, priority);
+        };
+        player._onHookContextDeactivated = (name) => {
+          engine.hooks.callHook("input:contextDeactivated", name);
+        };
+        player._onHookBindingChanged = (action, bindingIndex) => {
+          engine.hooks.callHook("input:bindingChanged", playerIdx, action, bindingIndex);
+        };
+
+        // Share accessibility profiles with each player.
+        player._accessibilityProfiles = cfg.accessibilityProfiles;
+
         // Restore persisted bindings if provided
         if (cfg.initialBindings[i]) {
           player.importBindings(cfg.initialBindings[i]!);
@@ -219,6 +234,14 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
       playback = playback_;
       recordingFrameIndex = 0;
 
+      // Wire recording state hooks.
+      recorder_._onStateChanged = (state) => {
+        engine.hooks.callHook("input:recordingState", state);
+      };
+      playback_._onStateChanged = (state) => {
+        engine.hooks.callHook("input:recordingState", state);
+      };
+
       const inputService = new InputService(
         players,
         {
@@ -234,6 +257,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
       );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (engine as any).provide("input", inputService);
+
+      // Share accessibility profiles with the service.
+      inputService._accessibilityProfiles = cfg.accessibilityProfiles;
 
       // Auto-play a recording supplied in config.
       if (cfg.recording) {

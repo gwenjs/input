@@ -38,11 +38,15 @@ export interface GyroVelocity {
 export class GyroDevice implements InputDevice {
   private _orientation: GyroState = { roll: 0, pitch: 0, yaw: 0 };
   private _rawOrientation: GyroState = { roll: 0, pitch: 0, yaw: 0 };
-  private _velocity: GyroVelocity = { alpha: 0, beta: 0, gamma: 0 };
+  private _calibration: GyroState | null = null;
+  private _rotationRate: GyroVelocity = { alpha: 0, beta: 0, gamma: 0 };
+  private _acceleration: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
   private _isAvailable = false;
+  private _isPermitted = false;
 
   private onOrientation = (e: DeviceOrientationEvent): void => {
     this._isAvailable = true;
+    this._isPermitted = true;
     this._rawOrientation.yaw = e.alpha ?? 0;
     this._rawOrientation.pitch = e.beta ?? 0;
     this._rawOrientation.roll = e.gamma ?? 0;
@@ -51,9 +55,15 @@ export class GyroDevice implements InputDevice {
   private onMotion = (e: DeviceMotionEvent): void => {
     const rate = e.rotationRate;
     if (rate) {
-      this._velocity.alpha = rate.alpha ?? 0;
-      this._velocity.beta = rate.beta ?? 0;
-      this._velocity.gamma = rate.gamma ?? 0;
+      this._rotationRate.alpha = rate.alpha ?? 0;
+      this._rotationRate.beta = rate.beta ?? 0;
+      this._rotationRate.gamma = rate.gamma ?? 0;
+    }
+    const accel = e.accelerationIncludingGravity;
+    if (accel) {
+      this._acceleration.x = accel.x ?? 0;
+      this._acceleration.y = accel.y ?? 0;
+      this._acceleration.z = accel.z ?? 0;
     }
   };
 
@@ -86,9 +96,14 @@ export class GyroDevice implements InputDevice {
     const s = this.smoothing;
     const inv = 1 - s;
 
-    const newRoll = this._orientation.roll * inv + this._rawOrientation.roll * s;
-    const newPitch = this._orientation.pitch * inv + this._rawOrientation.pitch * s;
-    const newYaw = this._orientation.yaw * inv + this._rawOrientation.yaw * s;
+    // Apply calibration offset to raw orientation.
+    const rawRoll = this._rawOrientation.roll - (this._calibration?.roll ?? 0);
+    const rawPitch = this._rawOrientation.pitch - (this._calibration?.pitch ?? 0);
+    const rawYaw = this._rawOrientation.yaw - (this._calibration?.yaw ?? 0);
+
+    const newRoll = this._orientation.roll * inv + rawRoll * s;
+    const newPitch = this._orientation.pitch * inv + rawPitch * s;
+    const newYaw = this._orientation.yaw * inv + rawYaw * s;
 
     this._orientation.roll =
       Math.abs(newRoll - this._orientation.roll) > this.deadZone ? newRoll : this._orientation.roll;
@@ -104,22 +119,59 @@ export class GyroDevice implements InputDevice {
   reset(): void {
     this._orientation = { roll: 0, pitch: 0, yaw: 0 };
     this._rawOrientation = { roll: 0, pitch: 0, yaw: 0 };
-    this._velocity = { alpha: 0, beta: 0, gamma: 0 };
+    this._rotationRate = { alpha: 0, beta: 0, gamma: 0 };
+    this._acceleration = { x: 0, y: 0, z: 0 };
+    this._calibration = null;
     this._isAvailable = false;
   }
 
-  /** Current smoothed device orientation. */
+  /**
+   * Snapshots the current raw orientation as the "zero" reference.
+   * Subsequent `orientation` readings will be relative to this baseline.
+   * Call this after the device settles in the neutral position.
+   */
+  calibrate(): void {
+    this._calibration = { ...this._rawOrientation };
+  }
+
+  /**
+   * Clears the calibration reference so `orientation` returns raw device angles.
+   */
+  resetCalibration(): void {
+    this._calibration = null;
+  }
+
+  /** Current smoothed device orientation, relative to calibration baseline if set. */
   get orientation(): Readonly<GyroState> {
     return this._orientation;
   }
 
-  /** Current device rotation rate in degrees per second. */
-  get velocity(): Readonly<GyroVelocity> {
-    return this._velocity;
+  /**
+   * Current device rotation rate in degrees per second.
+   * Sourced from `DeviceMotionEvent.rotationRate`.
+   */
+  get rotationRate(): Readonly<GyroVelocity> {
+    return this._rotationRate;
+  }
+
+  /**
+   * Current device acceleration including gravity, in m/s².
+   * Sourced from `DeviceMotionEvent.accelerationIncludingGravity`.
+   */
+  get acceleration(): Readonly<{ x: number; y: number; z: number }> {
+    return this._acceleration;
   }
 
   /** `true` once the first `deviceorientation` event has fired. Check before reading values. */
   get isAvailable(): boolean {
     return this._isAvailable;
+  }
+
+  /**
+   * `true` after the user has granted motion permission (iOS 13+).
+   * Always `true` on platforms that do not require an explicit permission grant.
+   */
+  get isPermitted(): boolean {
+    return this._isPermitted;
   }
 }

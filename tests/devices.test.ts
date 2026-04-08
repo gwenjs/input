@@ -617,9 +617,9 @@ describe("GyroDevice", () => {
   });
 
   it("initializes with zero velocity", () => {
-    expect(gyro.velocity.alpha).toBe(0);
-    expect(gyro.velocity.beta).toBe(0);
-    expect(gyro.velocity.gamma).toBe(0);
+    expect(gyro.rotationRate.alpha).toBe(0);
+    expect(gyro.rotationRate.beta).toBe(0);
+    expect(gyro.rotationRate.gamma).toBe(0);
   });
 
   it("becomes available after deviceorientation event", () => {
@@ -675,9 +675,9 @@ describe("GyroDevice", () => {
     window.dispatchEvent(motionEvent);
     gyro.update();
 
-    expect(gyro.velocity.alpha).toBeGreaterThan(0);
-    expect(gyro.velocity.beta).toBeGreaterThan(0);
-    expect(gyro.velocity.gamma).toBeGreaterThan(0);
+    expect(gyro.rotationRate.alpha).toBeGreaterThan(0);
+    expect(gyro.rotationRate.beta).toBeGreaterThan(0);
+    expect(gyro.rotationRate.gamma).toBeGreaterThan(0);
   });
 
   it("applies smoothing to orientation", () => {
@@ -790,7 +790,7 @@ describe("GyroDevice", () => {
     }).not.toThrow();
 
     // Velocity should stay zero
-    expect(gyro.velocity.alpha).toBe(0);
+    expect(gyro.rotationRate.alpha).toBe(0);
   });
 
   it("handles null alpha/beta/gamma in deviceorientation", () => {
@@ -819,8 +819,8 @@ describe("GyroDevice", () => {
       gyro.update();
     }).not.toThrow();
 
-    expect(gyro.velocity.alpha).toBe(0);
-    expect(gyro.velocity.beta).toBe(0);
-    expect(gyro.velocity.gamma).toBe(0);
+    expect(gyro.rotationRate.alpha).toBe(0);
+    expect(gyro.rotationRate.beta).toBe(0);
+    expect(gyro.rotationRate.gamma).toBe(0);
   });
 });

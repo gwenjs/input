@@ -13,13 +13,13 @@ import type { GyroDevice } from "../devices/gyro.js";
  *
  * @example
  * ```typescript
- * const gyro = useGyro()
+ * const gyro = useGyroscope()
  * if (gyro.isAvailable) {
  *   console.log(gyro.orientation.roll)
  * }
  * ```
  */
-export function useGyro(): GyroDevice {
+export function useGyroscope(): GyroDevice {
   const engine = useEngine();
   const input = engine.tryInject("input");
   if (!input) {

@@ -48,4 +48,11 @@ export type {
 // Types
 export type * from "./types.js";
 
-// module.ts is exported via the './module' sub-path export — not from index to avoid circular deps
+// Helpers
+export { forPlayers } from "./helpers/for-players.js";
+
+// Accessibility
+export * from "./accessibility/index.js";
+
+// module.ts default export — allows the module system to resolve '@gwenjs/input' as a string entry
+export { default } from "./module.js";

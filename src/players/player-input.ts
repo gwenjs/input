@@ -30,6 +30,30 @@ interface Axis2DState {
   rawValue: { x: number; y: number };
 }
 
+// ─── Accessibility types ──────────────────────────────────────────────────────
+
+/**
+ * A single remappable action, as returned by `PlayerInput.getRemappableActions()`.
+ * Suitable for populating an accessibility or settings rebinding UI.
+ */
+export interface RemappableAction {
+  /** Human-readable action name (from `ActionRef.name`). */
+  name: string;
+  /** Action type: `'button'`, `'axis1d'`, or `'axis2d'`. */
+  type: ActionType;
+  /** All bindings for this action, in evaluation order. */
+  bindings: Array<{
+    /** Zero-based index into the binding list for this action. */
+    index: number;
+    /** The raw input source (current effective source, override or default). */
+    source: BindingSource;
+    /** Human-readable label for the source, e.g. `"Space"`, `"A (Gamepad)"`. */
+    displayName: string;
+    /** `true` if the user has overridden this binding from its default. */
+    isOverridden: boolean;
+  }>;
+}
+
 // ─── PlayerInput ─────────────────────────────────────────────────────────────
 
 /**
@@ -79,6 +103,31 @@ export class PlayerInput {
   /** Optional callback fired after any binding change. */
   private readonly _onBindingsChanged: ((snapshot: BindingsSnapshot) => void) | undefined;
 
+  /**
+   * Named accessibility profiles (BindingsSnapshot presets) available to this player.
+   * Set by the plugin on construction.
+   * @internal
+   */
+  _accessibilityProfiles: Record<string, BindingsSnapshot> = {};
+
+  /**
+   * Called by the plugin to emit the `input:contextActivated` engine hook.
+   * @internal
+   */
+  _onHookContextActivated: ((name: string, priority: number) => void) | undefined;
+
+  /**
+   * Called by the plugin to emit the `input:contextDeactivated` engine hook.
+   * @internal
+   */
+  _onHookContextDeactivated: ((name: string) => void) | undefined;
+
+  /**
+   * Called by the plugin to emit the `input:bindingChanged` engine hook.
+   * @internal
+   */
+  _onHookBindingChanged: ((action: string, bindingIndex: number) => void) | undefined;
+
   /** Resolve function for an in-progress `captureNextInput` call. */
   private _captureResolve: ((source: BindingSource | null) => void) | null = null;
   /** Remaining milliseconds until `captureNextInput` times out. */
@@ -106,6 +155,7 @@ export class PlayerInput {
    */
   activateContext(name: string): void {
     this._context.activate(name);
+    this._onHookContextActivated?.(name, this._context.getPriorityOf(name) ?? 0);
   }
 
   /**
@@ -113,6 +163,7 @@ export class PlayerInput {
    */
   deactivateContext(name: string): void {
     this._context.deactivate(name);
+    this._onHookContextDeactivated?.(name);
   }
 
   /**
@@ -313,7 +364,7 @@ export class PlayerInput {
 
     const newEntry: BindingEntry = { ...original, source: newSource };
     this._setOverride(action.id, bindingIndex, newEntry);
-    this._notifyBindingsChanged();
+    this._notifyBindingsChanged(action.name, bindingIndex);
   }
 
   /**
@@ -327,7 +378,7 @@ export class PlayerInput {
     if (!overrides) return;
     overrides.delete(bindingIndex);
     if (overrides.size === 0) this._bindingOverrides.delete(action.id);
-    this._notifyBindingsChanged();
+    this._notifyBindingsChanged(action.name, bindingIndex);
   }
 
   /**
@@ -425,6 +476,64 @@ export class PlayerInput {
     }
 
     this._notifyBindingsChanged();
+  }
+
+  // ── Accessibility ───────────────────────────────────────────────────────────
+
+  /**
+   * Returns all actions registered across the player's contexts, with their
+   * current binding sources and display names.
+   *
+   * Use this to populate a settings or accessibility remapping UI.
+   *
+   * @returns An array of remappable actions in registration order.
+   */
+  getRemappableActions(): RemappableAction[] {
+    const seen = new Set<symbol>();
+    const result: RemappableAction[] = [];
+
+    for (const ctx of this._context.getAllRegistered()) {
+      for (const entry of ctx.bindings) {
+        if (seen.has(entry.action.id)) continue;
+        seen.add(entry.action.id);
+
+        const allBindings = this._context.getBindingsForAction(entry.action);
+        const overrides = this._bindingOverrides.get(entry.action.id);
+
+        result.push({
+          name: entry.action.name,
+          type: entry.action.type,
+          bindings: allBindings.map((b, idx) => ({
+            index: idx,
+            source: (overrides?.get(idx) ?? b).source,
+            displayName: _getSourceDisplayName((overrides?.get(idx) ?? b).source),
+            isOverridden: overrides?.has(idx) ?? false,
+          })),
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Applies a named accessibility profile to this player by calling `importBindings()`
+   * with the profile's `BindingsSnapshot`.
+   *
+   * Profiles are registered via `InputPlugin({ accessibilityProfiles: { ... } })`.
+   *
+   * @param name - The profile name as registered in the plugin configuration.
+   * @throws {Error} If the named profile is not registered.
+   */
+  activateAccessibilityProfile(name: string): void {
+    const profile = this._accessibilityProfiles[name];
+    if (!profile) {
+      throw new Error(
+        `[@gwenjs/input] Accessibility profile "${name}" is not registered. ` +
+          `Add it to InputPlugin({ accessibilityProfiles: { "${name}": ... } }).`,
+      );
+    }
+    this.importBindings(profile);
   }
 
   // ── Private helpers ─────────────────────────────────────────────────────────
@@ -573,8 +682,11 @@ export class PlayerInput {
     });
   }
 
-  private _notifyBindingsChanged(): void {
+  private _notifyBindingsChanged(actionName?: string, bindingIndex?: number): void {
     this._onBindingsChanged?.(this.exportBindings());
+    if (actionName !== undefined && bindingIndex !== undefined) {
+      this._onHookBindingChanged?.(actionName, bindingIndex);
+    }
   }
 
   // ── Recording / playback internals ──────────────────────────────────────────
@@ -635,4 +747,58 @@ export class PlayerInput {
   _getAxis2dValue(id: symbol): { x: number; y: number } {
     return this._axis2dStates.get(id)?.value ?? { x: 0, y: 0 };
   }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Returns a human-readable display name for a raw `BindingSource`.
+ * Used by `getRemappableActions()` to populate UI labels.
+ *
+ * @param source - The raw binding source value.
+ * @returns A short label string, e.g. `"Space"`, `"A (Gamepad)"`, `"Tap (Touch)"`.
+ */
+function _getSourceDisplayName(source: BindingSource): string {
+  if (typeof source === "string") return source;
+  if (typeof source === "number") return `Button ${source} (Gamepad)`;
+  if (source && typeof source === "object" && "kind" in (source as object)) {
+    const s = source as unknown as { kind: string; [k: string]: unknown };
+    switch (s.kind) {
+      case "MouseDelta":
+        return "Mouse Delta";
+      case "MouseWheel":
+        return "Mouse Wheel";
+      case "Composite2D":
+        return "Composite 2D";
+      case "Composite":
+        return "Composite";
+      case "TouchGesture.Tap":
+        return `Tap (Touch, ${(s.fingers ?? 1)}F)`;
+      case "TouchGesture.Swipe":
+        return `Swipe ${s.direction ?? ""} (Touch)`;
+      case "TouchGesture.Pinch":
+        return "Pinch (Touch)";
+      case "TouchGesture.Rotate":
+        return "Rotate (Touch)";
+      case "VirtualJoystick":
+        return `Virtual Joystick (${s.id})`;
+      case "VirtualButton":
+        return `Virtual Button (${s.id})`;
+      case "GyroAxis.Roll":
+        return "Gyro Roll";
+      case "GyroAxis.Pitch":
+        return "Gyro Pitch";
+      case "GyroAxis.Yaw":
+        return "Gyro Yaw";
+      case "GyroAxis.RotationRate":
+        return "Gyro Rotation Rate";
+      case "MotionGesture.Shake":
+        return "Shake";
+      case "MotionGesture.Tilt":
+        return `Tilt ${s.axis ?? ""} ${s.degrees ?? ""}°`;
+      default:
+        return String(s.kind ?? source);
+    }
+  }
+  return String(source);
 }

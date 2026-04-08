@@ -60,6 +60,12 @@ export class InputPlayback {
   /** Playback speed multiplier. `1` = real-time, `0.5` = half speed, `2` = double speed. */
   speed = 1;
 
+  /**
+   * Called by the plugin to emit the `input:recordingState` engine hook.
+   * @internal
+   */
+  _onStateChanged: ((state: "playing" | "paused" | "stopped") => void) | undefined;
+
   /** @param players - All `PlayerInput` instances managed by the plugin. */
   constructor(players: readonly PlayerInput[]) {
     this._players = players;
@@ -116,12 +122,14 @@ export class InputPlayback {
     }
     this._state = "playing";
     this._pushPlaybackStates();
+    this._onStateChanged?.("playing");
   }
 
   /** Pauses playback without resetting the playback head. */
   pause(): void {
     if (this._state === "playing") {
       this._state = "paused";
+      this._onStateChanged?.("paused");
     }
   }
 
@@ -254,10 +262,12 @@ export class InputPlayback {
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   private _stop(clearStates: boolean): void {
+    const wasPlaying = this._state !== "idle";
     this._state = "idle";
     this._framePosition = 0;
     if (clearStates) {
       this._clearPlaybackStates();
+      if (wasPlaying) this._onStateChanged?.("stopped");
     }
   }
 

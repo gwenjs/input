@@ -5,7 +5,7 @@ import { useKeyboard } from "../src/composables/use-keyboard.js";
 import { useMouse } from "../src/composables/use-mouse.js";
 import { useGamepad } from "../src/composables/use-gamepad.js";
 import { useTouch } from "../src/composables/use-touch.js";
-import { useGyro } from "../src/composables/use-gyro.js";
+import { useGyroscope } from "../src/composables/use-gyroscope.js";
 import { usePointer } from "../src/composables/use-pointer.js";
 import { useInput, usePlayer, useInputRecorder, useInputPlayback } from "../src/composables.js";
 import { defineAction } from "../src/actions/define-action.js";
@@ -197,14 +197,14 @@ describe("useTouch composable", () => {
   });
 });
 
-describe("useGyro composable", () => {
+describe("useGyroscope composable", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("throws when plugin not registered", () => {
     mockEngine.tryInject.mockReturnValue(null);
-    expect(() => useGyro()).toThrow("Plugin not found: @gwenjs/input");
+    expect(() => useGyroscope()).toThrow("Plugin not found: @gwenjs/input");
   });
 
   it("returns gyro device when registered", () => {
@@ -212,7 +212,7 @@ describe("useGyro composable", () => {
     const mockInput = { gyro: mockGyro };
     mockEngine.tryInject.mockReturnValue(mockInput);
 
-    const result = useGyro();
+    const result = useGyroscope();
 
     expect(result).toBe(mockGyro);
   });

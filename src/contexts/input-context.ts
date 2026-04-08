@@ -84,6 +84,15 @@ export class InputContext {
   }
 
   /**
+   * Returns the priority of a registered context by name, or `undefined` if not registered.
+   *
+   * @param name - Context name.
+   */
+  getPriorityOf(name: string): number | undefined {
+    return this.registered.get(name)?.priority;
+  }
+
+  /**
    * Returns all registered context definitions (active or not).
    */
   getAllRegistered(): InputContextDef[] {

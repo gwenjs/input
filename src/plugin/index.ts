@@ -203,6 +203,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
         const player = new PlayerInput(i, ctx, deviceSet, assignment, bindingsChangedCb);
 
+        // Provide logger to the player.
+        player._log = log;
+
         // Wire engine hooks for context activation/deactivation and binding changes.
         const playerIdx = i;
         player._onHookContextActivated = (name, priority) => {
@@ -257,6 +260,9 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
       );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (engine as any).provide("input", inputService);
+
+      // Provide logger to the service.
+      inputService._log = log;
 
       // Share accessibility profiles with the service.
       inputService._accessibilityProfiles = cfg.accessibilityProfiles;

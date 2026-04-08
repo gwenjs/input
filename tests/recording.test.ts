@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { InputRecorder } from "../src/recording/recorder.js";
 import { InputPlayback } from "../src/recording/playback.js";
 import { InputRecording } from "../src/recording/types.js";
@@ -1144,5 +1144,70 @@ describe("InputPlayback - _applyFrame and _pushPlaybackStates branch coverage", 
     playback.play();
     // Tick triggers _pushPlaybackStates → nameToRef.get('nonexistent_action') = undefined → !ref → continue
     expect(() => playback._tick(1 / 60)).not.toThrow();
+  });
+});
+
+// ─── Playback — onComplete unsubscribe ────────────────────────────────────────
+
+describe("InputPlayback — onComplete unsubscribe", () => {
+  function makePlayer() {
+    const devices = {
+      keyboard: new KeyboardDevice(),
+      mouse: new MouseDevice(),
+      gamepad: new GamepadDevice(),
+      touch: new TouchDevice(),
+      gyro: new GyroDevice(),
+    };
+    const context = new InputContext();
+    const player = new PlayerInput(0, context, devices, { type: "keyboard+mouse", slot: 0 });
+    return player;
+  }
+
+  it("unsubscribe fn removes callback so it is not invoked on completion", () => {
+    const player = makePlayer();
+    const playback = new InputPlayback([player]);
+
+    const recording = {
+      version: 1,
+      frameCount: 1,
+      targetFps: 60,
+      playerCount: 1,
+      actionNames: [],
+      frames: [{ index: 0, changes: [] }],
+    };
+
+    const cb = vi.fn();
+    const unsubscribe = playback.onComplete(cb);
+
+    // Remove the listener before playback finishes
+    unsubscribe();
+
+    playback.load(recording);
+    playback.play();
+    playback._tick(1 / 60); // advance past last frame
+
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it("callback is invoked on completion when NOT unsubscribed", () => {
+    const player = makePlayer();
+    const playback = new InputPlayback([player]);
+
+    const recording = {
+      version: 1,
+      frameCount: 1,
+      targetFps: 60,
+      playerCount: 1,
+      actionNames: [],
+      frames: [{ index: 0, changes: [] }],
+    };
+
+    const cb = vi.fn();
+    playback.onComplete(cb);
+    playback.load(recording);
+    playback.play();
+    playback._tick(1 / 60);
+
+    expect(cb).toHaveBeenCalled();
   });
 });

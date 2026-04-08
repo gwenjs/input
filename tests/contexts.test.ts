@@ -213,6 +213,33 @@ describe("InputContext", () => {
 
     expect(context.activeContextNames.filter((n) => n === "gameplay")).toHaveLength(1);
   });
+
+  it("register is idempotent — second registration of same name is a no-op", () => {
+    const def: InputContextDef = { name: "gameplay", priority: 10, bindings: [] };
+    context.register(def);
+    context.register(def);
+
+    expect(context.getAllRegistered()).toHaveLength(1);
+  });
+
+  it("getBindingsForAction filters out bindings for other actions", () => {
+    const jumpAction = defineAction("jump", { type: "button" });
+    const crouchAction = defineAction("crouch", { type: "button" });
+    const jumpBinding = bind(jumpAction, "Space");
+    const crouchBinding = bind(crouchAction, "KeyC");
+    const def: InputContextDef = {
+      name: "gameplay",
+      priority: 10,
+      bindings: [jumpBinding, crouchBinding],
+    };
+
+    context.register(def);
+    context.activate("gameplay");
+
+    const result = context.getBindingsForAction(jumpAction);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(jumpBinding);
+  });
 });
 
 describe("defineInputContext", () => {

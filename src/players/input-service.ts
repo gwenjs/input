@@ -1,5 +1,6 @@
 import type { ActionRef, ActionType, ActionState } from "../types.js";
 import type { PlayerInput } from "./player-input.js";
+import type { InputLogger } from "./player-input.js";
 import type { KeyboardDevice } from "../devices/keyboard.js";
 import type { MouseDevice } from "../devices/mouse.js";
 import type { GamepadDevice } from "../devices/gamepad.js";
@@ -42,6 +43,11 @@ export class InputService {
   _accessibilityProfiles: Record<string, BindingsSnapshot> = {};
   /** Set by the plugin in development mode; null in production. */
   _debug: InputDebugAPI | null = null;
+  /**
+   * Logger instance provided by the plugin. No-op when not set.
+   * @internal
+   */
+  _log: InputLogger | null = null;
 
   constructor(
     players: PlayerInput[],
@@ -62,9 +68,9 @@ export class InputService {
    */
   player(index: number): PlayerInput {
     if (index < 0 || index >= this._players.length) {
-      throw new RangeError(
-        `[@gwenjs/input] Player index ${index} is out of bounds (${this._players.length} player(s) configured).`,
-      );
+      const msg = `[@gwenjs/input] Player index ${index} is out of bounds (${this._players.length} player(s) configured).`;
+      this._log?.warn(msg);
+      throw new RangeError(msg);
     }
     return this._players[index];
   }
@@ -182,25 +188,33 @@ export class InputService {
    * ```
    */
   async requestMotionPermission(): Promise<"granted" | "denied" | "unavailable"> {
+    // Access via window to avoid ReferenceError in environments where the API doesn't exist.
     // DeviceOrientationEvent.requestPermission is iOS 13+ only.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const doe = DeviceOrientationEvent as any;
+    const doe = (typeof window !== "undefined" ? (window as any).DeviceOrientationEvent : undefined) as any;
     if (typeof doe?.requestPermission === "function") {
       try {
         const result: string = await doe.requestPermission();
         if (result === "granted") {
           this._devices.gyro.attach(window);
+          this._log?.info("[@gwenjs/input] motion permission granted (iOS)");
           return "granted";
         }
+        this._log?.warn("[@gwenjs/input] motion permission denied (iOS)");
         return "denied";
-      } catch {
+      } catch (err) {
+        this._log?.warn("[@gwenjs/input] motion permission request threw", {
+          error: String(err),
+        });
         return "denied";
       }
     }
     // Non-iOS or API not present — permission not required.
     if (typeof window !== "undefined" && "DeviceOrientationEvent" in window) {
+      this._log?.info("[@gwenjs/input] motion permission not required on this platform");
       return "granted";
     }
+    this._log?.warn("[@gwenjs/input] DeviceOrientationEvent not available");
     return "unavailable";
   }
 }

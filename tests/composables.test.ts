@@ -363,3 +363,27 @@ describe("usePointer composable", () => {
     expect(result.isJustPressed).toBe(true);
   });
 });
+
+describe("usePointer — touch with empty points map", () => {
+  it("returns position (0,0) when isTouching=true but no touch points registered", () => {
+    // isTouching can return true before points are fully populated (edge case)
+    const emptyTouchMock = { isTouching: vi.fn().mockReturnValue(true), points: new Map() };
+    const mockMouse = {
+      position: { x: 99, y: 88 },
+      delta: { x: 0, y: 0 },
+      isButtonPressed: vi.fn().mockReturnValue(false),
+      isButtonJustPressed: vi.fn().mockReturnValue(false),
+      isButtonJustReleased: vi.fn().mockReturnValue(false),
+    };
+    mockEngine.tryInject.mockReturnValue({ mouse: mockMouse, touch: emptyTouchMock });
+
+    const result = usePointer();
+
+    expect(result.type).toBe("touch");
+    expect(result.position).toEqual({ x: 0, y: 0 });
+    expect(result.delta).toEqual({ x: 0, y: 0 });
+    expect(result.isPressed).toBe(true);
+    expect(result.isJustPressed).toBe(false);
+    expect(result.isJustReleased).toBe(false);
+  });
+});

@@ -497,3 +497,58 @@ describe("Multiple interaction descriptors", () => {
     expect(result.isJustTriggered).toBe(true);
   });
 });
+
+// ─── Tap — pendingRelease branch ─────────────────────────────────────────────
+
+describe("Tap interaction — pendingRelease branch", () => {
+  it("fires isJustReleased on the frame after isJustTriggered", () => {
+    const pipeline = new InteractionPipeline([Tap({ maxDuration: 500 })]);
+
+    // Press and release quickly → isJustTriggered on release frame
+    const frameTrigger = pipeline.evaluate(true, 16);   // press
+    expect(frameTrigger.isJustTriggered).toBe(false);   // not yet
+
+    const frameRelease = pipeline.evaluate(false, 16);  // release → triggers
+    expect(frameRelease.isJustTriggered).toBe(true);
+    expect(frameRelease.isJustReleased).toBe(false);    // pendingRelease set
+
+    // Next frame: pendingRelease fires isJustReleased
+    const frameAfter = pipeline.evaluate(false, 16);
+    expect(frameAfter.isJustTriggered).toBe(false);
+    expect(frameAfter.isJustReleased).toBe(true);
+  });
+
+  it("pendingRelease is consumed and does not persist beyond one frame", () => {
+    const pipeline = new InteractionPipeline([Tap({ maxDuration: 500 })]);
+
+    pipeline.evaluate(true, 16);
+    pipeline.evaluate(false, 16);
+    pipeline.evaluate(false, 16); // pendingRelease fires here
+
+    // Frame after: no more isJustReleased
+    const frameFinal = pipeline.evaluate(false, 16);
+    expect(frameFinal.isJustReleased).toBe(false);
+  });
+});
+
+// ─── DoubleTap — isJustReleased after fired ───────────────────────────────────
+
+describe("DoubleTap interaction — isJustReleased after fired branch", () => {
+  it("fires isJustReleased on the frame after trigger when pressed again", () => {
+    const pipeline = new InteractionPipeline([DoubleTap({ maxGap: 300 })]);
+
+    // First tap
+    pipeline.evaluate(true, 16);
+    pipeline.evaluate(false, 16);
+    pipeline.evaluate(false, 50); // gap
+
+    // Second tap → fires isJustTriggered on release
+    pipeline.evaluate(true, 16);
+    const frameTriggered = pipeline.evaluate(false, 16);
+    expect(frameTriggered.isJustTriggered).toBe(true);
+
+    // Now press again → s.fired && justPressed → isJustReleased fires
+    const frameAfterPress = pipeline.evaluate(true, 16);
+    expect(frameAfterPress.isJustReleased).toBe(true);
+  });
+});

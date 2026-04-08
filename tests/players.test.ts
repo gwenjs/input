@@ -335,6 +335,41 @@ describe("PlayerInput", () => {
     devices.mouse.detach(window);
   });
 
+  it("captureNextInput resolves with gamepad button index on first press", async () => {
+    const devices = makeDevices();
+    const context = new InputContext();
+    const player = new PlayerInput(0, context, devices, { type: "gamepad", slot: 0 });
+
+    const mockGamepad = {
+      connected: true,
+      buttons: [
+        { pressed: true, value: 1, touched: true },
+        ...Array(16).fill({ pressed: false, value: 0, touched: false }),
+      ],
+      axes: [0, 0, 0, 0],
+      index: 0,
+      id: "Mock",
+      mapping: "standard" as GamepadMappingType,
+      timestamp: 0,
+      hapticActuators: [],
+      vibrationActuator: null,
+    };
+
+    Object.defineProperty(navigator, "getGamepads", {
+      value: () => [mockGamepad, null, null, null],
+      configurable: true,
+      writable: true,
+    });
+
+    const promise = player.captureNextInput({ timeout: 5000 });
+
+    devices.gamepad.update();
+    player._updateFrame(0.016);
+
+    const result = await promise;
+    expect(result).toBe(0);
+  });
+
   it("uses playback states when available", () => {
     const { player } = makePlayer();
     const action = defineAction("jump", { type: "button" });
@@ -958,6 +993,111 @@ describe("resolveSource", () => {
     const result = resolveSource(null as any, devices, 0);
     expect(result).toBe(false);
   });
+
+  it("resolves composite2d with right key pressed → positive x", () => {
+    devices.keyboard.attach(window);
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyD" }));
+    devices.keyboard.update();
+
+    const result = resolveSource(
+      { _type: "composite2d", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD" },
+      devices,
+      0,
+    );
+
+    expect((result as { x: number; y: number }).x).toBeGreaterThan(0);
+    devices.keyboard.detach(window);
+  });
+
+  it("resolves composite2d with left key pressed → negative x", () => {
+    devices.keyboard.attach(window);
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyA" }));
+    devices.keyboard.update();
+
+    const result = resolveSource(
+      { _type: "composite2d", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD" },
+      devices,
+      0,
+    );
+
+    expect((result as { x: number; y: number }).x).toBeLessThan(0);
+    devices.keyboard.detach(window);
+  });
+
+  it("resolves composite2d with down key pressed → positive y", () => {
+    devices.keyboard.attach(window);
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyS" }));
+    devices.keyboard.update();
+
+    const result = resolveSource(
+      { _type: "composite2d", up: "KeyW", down: "KeyS", left: "KeyA", right: "KeyD" },
+      devices,
+      0,
+    );
+
+    expect((result as { x: number; y: number }).y).toBeGreaterThan(0);
+    devices.keyboard.detach(window);
+  });
+
+  it("resolves composite1d with negative key pressed → negative value", () => {
+    devices.keyboard.attach(window);
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyA" }));
+    devices.keyboard.update();
+
+    const result = resolveSource(
+      { _type: "composite1d", positive: "KeyD", negative: "KeyA" },
+      devices,
+      0,
+    );
+
+    expect(result as number).toBeLessThan(0);
+    devices.keyboard.detach(window);
+  });
+
+  it("resolves gesture:tap — active gesture returns 1.0", () => {
+    const touchDev = new TouchDevice();
+    touchDev.attach(window);
+
+    const makeTouch = (id: number, x: number, y: number): Touch =>
+      ({
+        identifier: id,
+        clientX: x,
+        clientY: y,
+        pageX: x,
+        pageY: y,
+        screenX: x,
+        screenY: y,
+        radiusX: 1,
+        radiusY: 1,
+        rotationAngle: 0,
+        force: 1,
+        target: document.body,
+      }) as Touch;
+
+    const t = makeTouch(0, 100, 100);
+    const fireTouchEvent = (type: string, touches: Touch[]): void => {
+      window.dispatchEvent(
+        new TouchEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          touches: type === "touchend" ? [] : touches,
+          targetTouches: type === "touchend" ? [] : touches,
+          changedTouches: touches,
+        }),
+      );
+    };
+
+    // Fire tap: touchstart + touchend at same position (duration ~0ms, distance 0px)
+    fireTouchEvent("touchstart", [t]);
+    fireTouchEvent("touchend", [t]);
+    // Check gesture BEFORE update() since update() clears _firedGestures
+
+    const customDevices = { ...devices, touch: touchDev };
+    const result = resolveSource({ _type: "gesture:tap", fingers: 1 }, customDevices, 0);
+
+    expect(result).toBe(1.0);
+    touchDev.detach(window);
+  });
 });
 
 describe("PlayerInput - branch coverage", () => {
@@ -1387,5 +1527,371 @@ describe("PlayerInput - AllOf with gamepad button and _getButtonValue", () => {
     expect(state.isPressed).toBe(true);
 
     devices.keyboard.detach(window);
+  });
+});
+
+// ─── Additional InputService coverage ────────────────────────────────────────
+
+describe("InputService — extended coverage", () => {
+  function makeService(extraDevices: Record<string, unknown> = {}) {
+    const devices = makeDevices();
+    const context = new InputContext();
+    const player = new PlayerInput(0, context, devices, { type: "keyboard+mouse", slot: 0 });
+    const recorder = new InputRecorder([player]);
+    const playback = new InputPlayback([player]);
+    const service = new InputService([player], { ...devices, ...extraDevices }, recorder, playback);
+    return { service, player, devices, recorder, playback };
+  }
+
+  it("virtualControls returns undefined when not configured", () => {
+    const { service } = makeService();
+    expect(service.virtualControls).toBeUndefined();
+  });
+
+  it("virtualControls returns instance when configured", () => {
+    const fakeOverlay = { id: "overlay" };
+    const { service } = makeService({ virtualControls: fakeOverlay });
+    expect(service.virtualControls).toBe(fakeOverlay);
+  });
+
+  it("debug getter returns null by default", () => {
+    const { service } = makeService();
+    expect(service.debug).toBeNull();
+  });
+
+  it("debug getter returns assigned value", () => {
+    const { service } = makeService();
+    const fakeDebug = { kind: "debug" };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    service._debug = fakeDebug as any;
+    expect(service.debug).toBe(fakeDebug);
+  });
+
+  it("getAccessibilityProfiles returns empty array when none registered", () => {
+    const { service } = makeService();
+    expect(service.getAccessibilityProfiles()).toEqual([]);
+  });
+
+  it("getAccessibilityProfiles returns registered profile names", () => {
+    const { service } = makeService();
+    service._accessibilityProfiles = {
+      "one-handed-left": { version: 1, player: 0, overrides: [] },
+      "one-handed-right": { version: 1, player: 0, overrides: [] },
+    };
+    expect(service.getAccessibilityProfiles()).toEqual(
+      expect.arrayContaining(["one-handed-left", "one-handed-right"]),
+    );
+  });
+
+  it("player() throws RangeError for negative index", () => {
+    const { service } = makeService();
+    expect(() => service.player(-1)).toThrow(RangeError);
+  });
+
+  it("player() logs warning before throwing RangeError", () => {
+    const { service } = makeService();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    service._log = log;
+    expect(() => service.player(99)).toThrow(RangeError);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("out of bounds"));
+  });
+
+  it("requestMotionPermission returns 'granted' on non-iOS when DeviceOrientationEvent present", async () => {
+    const { service } = makeService();
+    // jsdom has DeviceOrientationEvent in window but no requestPermission
+    const result = await service.requestMotionPermission();
+    expect(result).toBe("granted");
+  });
+
+  it("requestMotionPermission returns 'unavailable' when DeviceOrientationEvent absent", async () => {
+    const { service } = makeService();
+    // Temporarily remove DeviceOrientationEvent from window
+    const original = (window as Record<string, unknown>)["DeviceOrientationEvent"];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any)["DeviceOrientationEvent"];
+    try {
+      const result = await service.requestMotionPermission();
+      expect(result).toBe("unavailable");
+    } finally {
+      (window as Record<string, unknown>)["DeviceOrientationEvent"] = original;
+    }
+  });
+
+  it("requestMotionPermission returns 'granted' on iOS after permission granted", async () => {
+    const { service } = makeService();
+    const mockDOE = { requestPermission: vi.fn().mockResolvedValue("granted") };
+    const originalDOE = (window as Record<string, unknown>)["DeviceOrientationEvent"];
+    (window as Record<string, unknown>)["DeviceOrientationEvent"] = mockDOE;
+    try {
+      const result = await service.requestMotionPermission();
+      expect(result).toBe("granted");
+      expect(mockDOE.requestPermission).toHaveBeenCalled();
+    } finally {
+      (window as Record<string, unknown>)["DeviceOrientationEvent"] = originalDOE;
+    }
+  });
+
+  it("requestMotionPermission returns 'denied' on iOS when permission denied", async () => {
+    const { service } = makeService();
+    const mockDOE = { requestPermission: vi.fn().mockResolvedValue("denied") };
+    const originalDOE = (window as Record<string, unknown>)["DeviceOrientationEvent"];
+    (window as Record<string, unknown>)["DeviceOrientationEvent"] = mockDOE;
+    try {
+      const result = await service.requestMotionPermission();
+      expect(result).toBe("denied");
+    } finally {
+      (window as Record<string, unknown>)["DeviceOrientationEvent"] = originalDOE;
+    }
+  });
+
+  it("requestMotionPermission returns 'denied' when iOS API throws", async () => {
+    const { service } = makeService();
+    const mockDOE = {
+      requestPermission: vi.fn().mockRejectedValue(new Error("NotAllowedError")),
+    };
+    const originalDOE = (window as Record<string, unknown>)["DeviceOrientationEvent"];
+    (window as Record<string, unknown>)["DeviceOrientationEvent"] = mockDOE;
+    try {
+      const result = await service.requestMotionPermission();
+      expect(result).toBe("denied");
+    } finally {
+      (window as Record<string, unknown>)["DeviceOrientationEvent"] = originalDOE;
+    }
+  });
+
+  it("requestMotionPermission logs info and attaches gyro on iOS grant", async () => {
+    const { service, devices } = makeService();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    service._log = log;
+    vi.spyOn(devices.gyro, "attach").mockImplementation(() => {});
+
+    const mockDOE = { requestPermission: vi.fn().mockResolvedValue("granted") };
+    const originalDOE = (window as Record<string, unknown>)["DeviceOrientationEvent"];
+    (window as Record<string, unknown>)["DeviceOrientationEvent"] = mockDOE;
+    try {
+      await service.requestMotionPermission();
+      expect(log.info).toHaveBeenCalledWith(expect.stringContaining("granted"));
+      expect(devices.gyro.attach).toHaveBeenCalled();
+    } finally {
+      (window as Record<string, unknown>)["DeviceOrientationEvent"] = originalDOE;
+    }
+  });
+
+  it("requestMotionPermission logs warn on iOS denial", async () => {
+    const { service } = makeService();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    service._log = log;
+
+    const mockDOE = { requestPermission: vi.fn().mockResolvedValue("denied") };
+    const originalDOE = (window as Record<string, unknown>)["DeviceOrientationEvent"];
+    (window as Record<string, unknown>)["DeviceOrientationEvent"] = mockDOE;
+    try {
+      await service.requestMotionPermission();
+      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("denied"));
+    } finally {
+      (window as Record<string, unknown>)["DeviceOrientationEvent"] = originalDOE;
+    }
+  });
+});
+
+// ─── PlayerInput logger paths ─────────────────────────────────────────────────
+
+describe("PlayerInput — logger and error paths", () => {
+  it("activateContext logs warn and rethrows for unregistered context", () => {
+    const { player } = makePlayer();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    player._log = log;
+    expect(() => player.activateContext("nonexistent")).toThrow();
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("cannot activate context"),
+      expect.objectContaining({ error: expect.any(String) }),
+    );
+  });
+
+  it("activateAccessibilityProfile logs error and throws for unknown profile", () => {
+    const { player } = makePlayer();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    player._log = log;
+    expect(() => player.activateAccessibilityProfile("nonexistent")).toThrow();
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining("not registered"));
+  });
+
+  it("captureNextInput logs debug when cancelling previous capture", async () => {
+    const { player } = makePlayer();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    player._log = log;
+
+    // Start first capture (never resolves until cancelled)
+    const first = player.captureNextInput({ timeout: 5000 });
+    // Start second capture — should cancel the first
+    player.captureNextInput({ timeout: 5000 });
+
+    expect(log.debug).toHaveBeenCalledWith(expect.stringContaining("cancelling previous"));
+    // First promise should resolve to null (cancelled)
+    const result = await first;
+    expect(result).toBeNull();
+  });
+
+  it("importBindings logs warn for unknown action names in snapshot", () => {
+    const { player } = makePlayer();
+    const log = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    player._log = log;
+
+    player.importBindings({
+      version: 1,
+      player: 0,
+      overrides: [{ actionId: "ghost_action", bindingIndex: 0, newBinding: "Space" }],
+    });
+
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("unknown action"),
+    );
+  });
+});
+
+// ─── PlayerInput — _getSourceDisplayName via getRemappableActions ─────────────
+
+describe("PlayerInput — getRemappableActions display names", () => {
+  function makePlayerWithAction(source: unknown) {
+    const { player, context } = makePlayer();
+    const action = defineAction("test", { type: "button" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const binding = bind(action, source as any);
+    const def = defineInputContext("ctx", { priority: 0, bindings: [binding] });
+    context.register(def);
+    player.activateContext("ctx");
+    return player;
+  }
+
+  it("string source returns key name as-is", () => {
+    const player = makePlayerWithAction("Space");
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Space");
+  });
+
+  it("number source returns 'Button N (Gamepad)'", () => {
+    const player = makePlayerWithAction(3);
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Button 3 (Gamepad)");
+  });
+
+  it("mouse:delta source returns 'Mouse Delta'", () => {
+    const player = makePlayerWithAction({ _type: "mouse:delta" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Mouse Delta");
+  });
+
+  it("mouse:wheel source returns 'Mouse Wheel'", () => {
+    const player = makePlayerWithAction({ _type: "mouse:wheel" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Mouse Wheel");
+  });
+
+  it("composite2d source returns 'Composite 2D'", () => {
+    const player = makePlayerWithAction({
+      _type: "composite2d",
+      up: "KeyW",
+      down: "KeyS",
+      left: "KeyA",
+      right: "KeyD",
+    });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Composite 2D");
+  });
+
+  it("composite1d source returns 'Composite'", () => {
+    const player = makePlayerWithAction({ _type: "composite1d", negative: "KeyA", positive: "KeyD" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Composite");
+  });
+
+  it("gesture:tap source returns tap label with finger count", () => {
+    const player = makePlayerWithAction({ _type: "gesture:tap", fingers: 2 });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Tap (Touch, 2F)");
+  });
+
+  it("gesture:tap source defaults to 1 finger", () => {
+    const player = makePlayerWithAction({ _type: "gesture:tap" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Tap (Touch, 1F)");
+  });
+
+  it("gesture:swipe source returns swipe label with direction", () => {
+    const player = makePlayerWithAction({ _type: "gesture:swipe", direction: "right" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Swipe right (Touch)");
+  });
+
+  it("gesture:pinch source returns 'Pinch (Touch)'", () => {
+    const player = makePlayerWithAction({ _type: "gesture:pinch" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Pinch (Touch)");
+  });
+
+  it("gesture:rotate source returns 'Rotate (Touch)'", () => {
+    const player = makePlayerWithAction({ _type: "gesture:rotate" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Rotate (Touch)");
+  });
+
+  it("virtual:joystick source returns joystick label with id", () => {
+    const player = makePlayerWithAction({ _type: "virtual:joystick", id: "move-stick" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Virtual Joystick (move-stick)");
+  });
+
+  it("virtual:button source returns button label with id", () => {
+    const player = makePlayerWithAction({ _type: "virtual:button", id: "jump-btn" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Virtual Button (jump-btn)");
+  });
+
+  it("gyro:roll source returns 'Gyro Roll'", () => {
+    const player = makePlayerWithAction({ _type: "gyro:roll" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Gyro Roll");
+  });
+
+  it("gyro:pitch source returns 'Gyro Pitch'", () => {
+    const player = makePlayerWithAction({ _type: "gyro:pitch" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Gyro Pitch");
+  });
+
+  it("gyro:yaw source returns 'Gyro Yaw'", () => {
+    const player = makePlayerWithAction({ _type: "gyro:yaw" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Gyro Yaw");
+  });
+
+  it("gyro:rotationRate source returns 'Gyro Rotation Rate'", () => {
+    const player = makePlayerWithAction({ _type: "gyro:rotationRate" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Gyro Rotation Rate");
+  });
+
+  it("motion:shake source returns 'Shake'", () => {
+    const player = makePlayerWithAction({ _type: "motion:shake", threshold: 15 });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Shake");
+  });
+
+  it("motion:tilt source returns tilt label with axis and degrees", () => {
+    const player = makePlayerWithAction({ _type: "motion:tilt", axis: "roll", degrees: 30 });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("Tilt roll 30°");
+  });
+
+  it("unknown _type object returns the _type string", () => {
+    const player = makePlayerWithAction({ _type: "custom:thing" });
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("custom:thing");
+  });
+
+  it("object without _type returns String(source) fallback", () => {
+    const player = makePlayerWithAction({ someOtherProp: 42 } as any);
+    const [action] = player.getRemappableActions();
+    expect(action.bindings[0].displayName).toBe("[object Object]");
   });
 });

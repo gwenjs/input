@@ -18,6 +18,20 @@ import {
 } from "./binding-resolver.js";
 import type { BindingsSnapshot } from "./bindings-snapshot.js";
 
+// ─── Logger ───────────────────────────────────────────────────────────────────
+
+/**
+ * Minimal logger interface used by `PlayerInput` and `InputService`.
+ * Provided by the GWEN engine via `engine.logger.child()`.
+ * @internal
+ */
+export interface InputLogger {
+  info(msg: string, meta?: Record<string, unknown>): void;
+  warn(msg: string, meta?: Record<string, unknown>): void;
+  error(msg: string, meta?: Record<string, unknown>): void;
+  debug(msg: string, meta?: Record<string, unknown>): void;
+}
+
 // ─── Internal state shapes ────────────────────────────────────────────────────
 
 interface Axis1DState {
@@ -133,6 +147,12 @@ export class PlayerInput {
   /** Remaining milliseconds until `captureNextInput` times out. */
   private _captureTimeoutMs: number | null = null;
 
+  /**
+   * Logger instance provided by the plugin. No-op when not set.
+   * @internal
+   */
+  _log: InputLogger | null = null;
+
   constructor(
     index: number,
     context: InputContext,
@@ -154,8 +174,15 @@ export class PlayerInput {
    * @throws {Error} If the context was never registered.
    */
   activateContext(name: string): void {
-    this._context.activate(name);
-    this._onHookContextActivated?.(name, this._context.getPriorityOf(name) ?? 0);
+    try {
+      this._context.activate(name);
+      this._onHookContextActivated?.(name, this._context.getPriorityOf(name) ?? 0);
+    } catch (err) {
+      this._log?.warn(`[@gwenjs/input] player ${this.index}: cannot activate context "${name}"`, {
+        error: String(err),
+      });
+      throw err;
+    }
   }
 
   /**
@@ -412,6 +439,9 @@ export class PlayerInput {
     return new Promise((resolve) => {
       // If already capturing, cancel the previous request
       if (this._captureResolve) {
+        this._log?.debug(
+          `[@gwenjs/input] player ${this.index}: captureNextInput called while already capturing — cancelling previous`,
+        );
         this._captureResolve(null);
       }
       this._captureResolve = resolve;
@@ -462,7 +492,12 @@ export class PlayerInput {
 
     for (const { actionId, bindingIndex, newBinding } of snapshot.overrides) {
       const actionRef = actionsByName.get(actionId);
-      if (!actionRef) continue;
+      if (!actionRef) {
+        this._log?.warn(
+          `[@gwenjs/input] player ${this.index}: importBindings — unknown action "${actionId}", skipping`,
+        );
+        continue;
+      }
 
       const bindings = this._context.getBindingsForAction(actionRef);
       const original = bindings[bindingIndex];
@@ -528,10 +563,11 @@ export class PlayerInput {
   activateAccessibilityProfile(name: string): void {
     const profile = this._accessibilityProfiles[name];
     if (!profile) {
-      throw new Error(
+      const msg =
         `[@gwenjs/input] Accessibility profile "${name}" is not registered. ` +
-          `Add it to InputPlugin({ accessibilityProfiles: { "${name}": ... } }).`,
-      );
+        `Add it to InputPlugin({ accessibilityProfiles: { "${name}": ... } }).`;
+      this._log?.error(msg);
+      throw new Error(msg);
     }
     this.importBindings(profile);
   }
@@ -756,48 +792,49 @@ export class PlayerInput {
  * Used by `getRemappableActions()` to populate UI labels.
  *
  * @param source - The raw binding source value.
- * @returns A short label string, e.g. `"Space"`, `"A (Gamepad)"`, `"Tap (Touch)"`.
+ * @returns A short label string, e.g. `"Space"`, `"Button 0 (Gamepad)"`, `"Tap (Touch)"`.
  */
 function _getSourceDisplayName(source: BindingSource): string {
   if (typeof source === "string") return source;
   if (typeof source === "number") return `Button ${source} (Gamepad)`;
-  if (source && typeof source === "object" && "kind" in (source as object)) {
-    const s = source as unknown as { kind: string; [k: string]: unknown };
-    switch (s.kind) {
-      case "MouseDelta":
+  if (source && typeof source === "object") {
+    const s = source as Record<string, unknown>;
+    const type = String(s["_type"] ?? "");
+    switch (type) {
+      case "mouse:delta":
         return "Mouse Delta";
-      case "MouseWheel":
+      case "mouse:wheel":
         return "Mouse Wheel";
-      case "Composite2D":
+      case "composite2d":
         return "Composite 2D";
-      case "Composite":
+      case "composite1d":
         return "Composite";
-      case "TouchGesture.Tap":
-        return `Tap (Touch, ${(s.fingers ?? 1)}F)`;
-      case "TouchGesture.Swipe":
-        return `Swipe ${s.direction ?? ""} (Touch)`;
-      case "TouchGesture.Pinch":
+      case "gesture:tap":
+        return `Tap (Touch, ${String(s["fingers"] ?? 1)}F)`;
+      case "gesture:swipe":
+        return `Swipe ${String(s["direction"] ?? "")} (Touch)`;
+      case "gesture:pinch":
         return "Pinch (Touch)";
-      case "TouchGesture.Rotate":
+      case "gesture:rotate":
         return "Rotate (Touch)";
-      case "VirtualJoystick":
-        return `Virtual Joystick (${s.id})`;
-      case "VirtualButton":
-        return `Virtual Button (${s.id})`;
-      case "GyroAxis.Roll":
+      case "virtual:joystick":
+        return `Virtual Joystick (${String(s["id"])})`;
+      case "virtual:button":
+        return `Virtual Button (${String(s["id"])})`;
+      case "gyro:roll":
         return "Gyro Roll";
-      case "GyroAxis.Pitch":
+      case "gyro:pitch":
         return "Gyro Pitch";
-      case "GyroAxis.Yaw":
+      case "gyro:yaw":
         return "Gyro Yaw";
-      case "GyroAxis.RotationRate":
+      case "gyro:rotationRate":
         return "Gyro Rotation Rate";
-      case "MotionGesture.Shake":
+      case "motion:shake":
         return "Shake";
-      case "MotionGesture.Tilt":
-        return `Tilt ${s.axis ?? ""} ${s.degrees ?? ""}°`;
+      case "motion:tilt":
+        return `Tilt ${String(s["axis"] ?? "")} ${String(s["degrees"] ?? "")}°`;
       default:
-        return String(s.kind ?? source);
+        return type || String(source);
     }
   }
   return String(source);

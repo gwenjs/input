@@ -689,3 +689,52 @@ describe("getBindingMap - processors and interactions", () => {
     expect(e?.interactions).toContain("hold");
   });
 });
+
+// ─── debug-api — uncovered _describeSource branches ──────────────────────────
+
+describe("getBindingMap — additional formatSource coverage", () => {
+  it("formats mouse:wheel object source (line 292)", () => {
+    const { debug, player, context } = makeDebugAPI();
+    const action = defineAction("scroll", { type: "axis1d" });
+    const source = { _type: "mouse:wheel" as const };
+    const binding = bind(action, source);
+    const def = defineInputContext("gameplay", { priority: 10, bindings: [binding] });
+
+    context.register(def);
+    player.activateContext("gameplay");
+
+    const entries = debug.getBindingMap();
+    const e = entries.find((x) => x.actionName === "scroll");
+    expect(e?.source).toBe("MouseWheel");
+  });
+
+  it("formats unknown _type object in default branch (line 301)", () => {
+    const { debug, player, context } = makeDebugAPI();
+    const action = defineAction("custom", { type: "button" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const source = { _type: "custom:widget" } as any;
+    const binding = bind(action, source);
+    const def = defineInputContext("gameplay", { priority: 10, bindings: [binding] });
+
+    context.register(def);
+    player.activateContext("gameplay");
+
+    const entries = debug.getBindingMap();
+    const e = entries.find((x) => x.actionName === "custom");
+    expect(e?.source).toBe("custom:widget");
+  });
+
+  it("formats number source (gamepad button index) as GamepadButtons[N] (line 265-267)", () => {
+    const { debug, player, context } = makeDebugAPI();
+    const action = defineAction("fire", { type: "button" });
+    const binding = bind(action, 0); // gamepad button 0
+    const def = defineInputContext("gameplay", { priority: 10, bindings: [binding] });
+
+    context.register(def);
+    player.activateContext("gameplay");
+
+    const entries = debug.getBindingMap();
+    const e = entries.find((x) => x.actionName === "fire");
+    expect(e?.source).toBe("GamepadButtons[0]");
+  });
+});

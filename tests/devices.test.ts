@@ -365,6 +365,45 @@ describe("MouseDevice", () => {
     mouse.update();
     expect(mouse.getJustPressedButtons()).toHaveLength(0);
   });
+
+  it("uses cached rect on second mousemove with canvas (covers !cachedRect false branch)", () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 800;
+    canvas.height = 600;
+    document.body.appendChild(canvas);
+
+    const canvasMouse = new MouseDevice();
+    canvasMouse.attach(window, canvas);
+
+    // First move: cachedRect is null → set it
+    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 50, clientY: 50 }));
+    // Second move: cachedRect already set → skips re-fetch (false branch)
+    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 100, clientY: 100 }));
+    canvasMouse.update();
+
+    expect(canvasMouse.position).toBeDefined();
+    canvasMouse.detach(window);
+    document.body.removeChild(canvas);
+  });
+
+  it("ignores duplicate mousedown while button is already justPressed (covers pendingDown guard)", () => {
+    window.dispatchEvent(new MouseEvent("mousedown", { button: 0 }));
+    mouse.update(); // → justPressed
+    // Fire mousedown again while button is justPressed — should not re-add to pendingDown
+    window.dispatchEvent(new MouseEvent("mousedown", { button: 0 }));
+    mouse.update(); // → held (not re-justPressed)
+    expect(mouse.getButtonState(0)).toBe("held");
+  });
+
+  it("idle button state remains idle on extra update (covers else-if false branch)", () => {
+    window.dispatchEvent(new MouseEvent("mousedown", { button: 0 }));
+    mouse.update(); // → justPressed
+    window.dispatchEvent(new MouseEvent("mouseup", { button: 0 }));
+    mouse.update(); // → justReleased
+    mouse.update(); // → idle
+    mouse.update(); // idle falls through the if/else if (neither justReleased nor justPressed/held)
+    expect(mouse.getButtonState(0)).toBe("idle");
+  });
 });
 
 interface MockGamepad {
@@ -822,5 +861,121 @@ describe("GyroDevice", () => {
     expect(gyro.rotationRate.alpha).toBe(0);
     expect(gyro.rotationRate.beta).toBe(0);
     expect(gyro.rotationRate.gamma).toBe(0);
+  });
+});
+
+// ─── GyroDevice — extended coverage ──────────────────────────────────────────
+
+describe("GyroDevice — calibration and extended APIs", () => {
+  let gyro: GyroDevice;
+
+  beforeEach(() => {
+    gyro = new GyroDevice(1.0, 0); // smoothing=1 for instant updates
+    gyro.attach(window);
+  });
+
+  afterEach(() => {
+    gyro.detach(window);
+  });
+
+  function fireOrientation(alpha: number, beta: number, gamma: number) {
+    window.dispatchEvent(
+      Object.assign(new Event("deviceorientation"), { alpha, beta, gamma, absolute: false }),
+    );
+    gyro.update();
+  }
+
+  it("calibrate() sets current orientation as zero baseline", () => {
+    fireOrientation(90, 45, -30);
+    gyro.calibrate();
+
+    // After calibration, orientation should be near zero
+    fireOrientation(90, 45, -30); // same values → relative = 0
+    expect(gyro.orientation.yaw).toBeCloseTo(0, 0);
+    expect(gyro.orientation.pitch).toBeCloseTo(0, 0);
+    expect(gyro.orientation.roll).toBeCloseTo(0, 0);
+  });
+
+  it("calibrate() makes subsequent readings relative to baseline", () => {
+    fireOrientation(90, 45, -30);
+    gyro.calibrate();
+
+    // Move 10° in each axis
+    fireOrientation(100, 55, -20);
+    expect(gyro.orientation.yaw).toBeCloseTo(10, 0);
+    expect(gyro.orientation.pitch).toBeCloseTo(10, 0);
+    expect(gyro.orientation.roll).toBeCloseTo(10, 0);
+  });
+
+  it("resetCalibration() restores raw orientation readings", () => {
+    fireOrientation(90, 45, -30);
+    gyro.calibrate();
+    gyro.resetCalibration();
+
+    // After reset, raw values should be returned again
+    fireOrientation(90, 45, -30);
+    expect(gyro.orientation.yaw).toBeCloseTo(90, 0);
+    expect(gyro.orientation.pitch).toBeCloseTo(45, 0);
+    expect(gyro.orientation.roll).toBeCloseTo(-30, 0);
+  });
+
+  it("isPermitted is false before any orientation event", () => {
+    const freshGyro = new GyroDevice();
+    expect(freshGyro.isPermitted).toBe(false);
+  });
+
+  it("isPermitted becomes true after first deviceorientation event", () => {
+    expect(gyro.isPermitted).toBe(false);
+    fireOrientation(0, 0, 0);
+    expect(gyro.isPermitted).toBe(true);
+  });
+
+  it("acceleration initializes to zero", () => {
+    expect(gyro.acceleration.x).toBe(0);
+    expect(gyro.acceleration.y).toBe(0);
+    expect(gyro.acceleration.z).toBe(0);
+  });
+
+  it("acceleration updates from devicemotion event", () => {
+    // First need orientation so gyro is available
+    fireOrientation(0, 0, 0);
+
+    window.dispatchEvent(
+      Object.assign(new Event("devicemotion"), {
+        accelerationIncludingGravity: { x: 1.5, y: -9.8, z: 0.3 },
+        rotationRate: { alpha: 0, beta: 0, gamma: 0 },
+      }),
+    );
+    gyro.update();
+
+    expect(gyro.acceleration.x).toBeCloseTo(1.5, 1);
+    expect(gyro.acceleration.y).toBeCloseTo(-9.8, 1);
+    expect(gyro.acceleration.z).toBeCloseTo(0.3, 1);
+  });
+
+  it("acceleration is unchanged when devicemotion has no accelerationIncludingGravity", () => {
+    fireOrientation(0, 0, 0);
+
+    window.dispatchEvent(
+      Object.assign(new Event("devicemotion"), {
+        accelerationIncludingGravity: null,
+        rotationRate: { alpha: 10, beta: 5, gamma: -2 },
+      }),
+    );
+    gyro.update();
+
+    expect(gyro.acceleration.x).toBe(0);
+    expect(gyro.acceleration.y).toBe(0);
+    expect(gyro.acceleration.z).toBe(0);
+  });
+
+  it("reset() clears calibration", () => {
+    fireOrientation(90, 45, -30);
+    gyro.calibrate();
+    gyro.reset();
+
+    // After reset, raw values should come back
+    fireOrientation(90, 45, -30);
+    expect(gyro.orientation.yaw).toBeCloseTo(90, 0);
   });
 });

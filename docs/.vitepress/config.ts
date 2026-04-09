@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: '@gwenjs/input',
   description: 'Type-safe input plugin for the GWEN game engine.',
+  base: '/input/',
 
   locales: {
     root: {

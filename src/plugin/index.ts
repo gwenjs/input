@@ -126,9 +126,6 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
 
     setup(engine: GwenEngine) {
       log = engine.logger.child("@gwenjs/input");
-      // `provide()` is part of the GWEN engine runtime but not yet reflected in the
-      // public GwenEngine type. Cast once here rather than at every call site.
-      const eng = engine as GwenEngine & { provide(key: string, value: unknown): void };
 
       keyboard = new KeyboardDevice();
       mouse = new MouseDevice();
@@ -243,7 +240,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         }
 
         players.push(player);
-        eng.provide(`player:${i}`, player);
+        engine.provide(`player:${i}` as "player:0" | "player:1" | "player:2" | "player:3", player);
       }
 
       const recorder_ = new InputRecorder(players);
@@ -273,7 +270,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
         recorder_,
         playback_,
       );
-      eng.provide("input", inputService);
+      engine.provide("input", inputService);
 
       // Provide logger to the service.
       inputService._log = log;

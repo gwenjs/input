@@ -1,5 +1,10 @@
 # @gwenjs/input
 
+[![npm version](https://img.shields.io/npm/v/@gwenjs/input?style=flat-square&color=crimson)](https://www.npmjs.com/package/@gwenjs/input)
+[![CI](https://img.shields.io/github/actions/workflow/status/gwenjs/input/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gwenjs/input/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-gwenjs.github.io%2Finput-blue?style=flat-square)](https://gwenjs.github.io/input/)
+[![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-orange?style=flat-square)](https://www.mozilla.org/en-US/MPL/2.0/)
+
 Type-safe, composables-first input plugin for the GWEN game engine.
 
 Handles keyboard, mouse, gamepad, touch, and gyroscope input through a unified action system with stackable input contexts, runtime rebinding, processor pipelines, and multi-player support.

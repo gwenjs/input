@@ -27,3 +27,10 @@ features:
   - title: Suite complète de composables
     details: useInput, useAction, usePlayer, useKeyboard, useMouse, useGamepad, useTouch, useGyroscope, usePointer, useInputRecorder, useInputPlayback, forPlayers.
 ---
+
+<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:24px 0 8px">
+  <a href="https://www.npmjs.com/package/@gwenjs/input"><img src="https://img.shields.io/npm/v/@gwenjs/input?style=flat-square&color=crimson" alt="npm version" /></a>
+  <a href="https://github.com/gwenjs/input/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gwenjs/input/ci.yml?branch=main&style=flat-square&label=CI" alt="CI" /></a>
+  <a href="https://gwenjs.github.io/input/"><img src="https://img.shields.io/badge/docs-gwenjs.github.io%2Finput-blue?style=flat-square" alt="Docs" /></a>
+  <a href="https://www.mozilla.org/en-US/MPL/2.0/"><img src="https://img.shields.io/badge/license-MPL--2.0-orange?style=flat-square" alt="Licence: MPL-2.0" /></a>
+</div>

@@ -8,10 +8,12 @@ Handles keyboard, mouse, gamepad, touch, and gyroscope input through a unified a
 
 ## Installation
 
-This package is part of the GWEN monorepo and is not published to npm independently. Use it via the workspace:
+```sh
+pnpm add @gwenjs/input
+```
 
-```json
-{ "dependencies": { "@gwenjs/input": "workspace:*" } }
+```sh
+npm install @gwenjs/input
 ```
 
 ---
@@ -318,4 +320,4 @@ InputPlugin({
 
 ## License
 
-Part of the GWEN monorepo. See root `LICENSE` for details.
+[MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/)

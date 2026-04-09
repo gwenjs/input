@@ -7,9 +7,6 @@ dist/
 # Coverage
 coverage/
 
-# Lock file (local workspace, managed by root)
-package-lock.json
-
 # Verdaccio local registry (non commité — résolution locale uniquement)
 .npmrc
 
@@ -20,4 +17,3 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
-pnpm-lock.yaml

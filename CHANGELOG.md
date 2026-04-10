@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/gwenjs/input/compare/input-v0.1.0...input-v0.1.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* **ci:** add npm to login during publish ([e1e0929](https://github.com/gwenjs/input/commit/e1e09299d4363158fd7dd38629c7b84bae454098))
+
 ## [0.1.0](https://github.com/gwenjs/input/commits/input-v0.1.0) (2026-04-09)
 
 ### Features

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/gwenjs/input/compare/input-v0.1.1...input-v0.1.2) (2026-04-11)
+
+
+### Bug Fixes
+
+* resolve option break on node side ([ec6f8e1](https://github.com/gwenjs/input/commit/ec6f8e1f19806fd9f7873903bef66ca9fd8f57b1))
+
 ## [0.1.1](https://github.com/gwenjs/input/compare/input-v0.1.0...input-v0.1.1) (2026-04-10)
 
 

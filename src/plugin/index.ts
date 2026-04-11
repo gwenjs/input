@@ -98,7 +98,9 @@ export interface InputPluginHooks {
  * ```
  */
 export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
-  const cfg = normalizeConfig(opts);
+  // cfg is assigned in setup() so normalizeConfig (which resolves eventTarget)
+  // runs at runtime in the browser, not at build time during gwen prepare.
+  let cfg: ReturnType<typeof normalizeConfig>;
   let log: ReturnType<GwenEngine["logger"]["child"]>;
 
   let keyboard: KeyboardDevice | undefined;
@@ -125,6 +127,7 @@ export const InputPlugin = definePlugin((opts: InputPluginConfig = {}) => {
     providesHooks: {} as InputPluginHooks,
 
     setup(engine: GwenEngine) {
+      cfg = normalizeConfig(opts);
       log = engine.logger.child("@gwenjs/input");
 
       keyboard = new KeyboardDevice();

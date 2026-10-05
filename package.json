@@ -1,6 +1,7 @@
 {
   "name": "@gwenjs/input",
   "version": "0.1.2",
+  "license": "MPL-2.0",
   "description": "Input plugin for GWEN",
   "repository": {
     "type": "git",
@@ -8,7 +9,8 @@
   },
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "exports": {
     ".": {
